@@ -1,0 +1,13 @@
+bin/
+obj/
+*.db
+identity.db
+*.user
+*.vs/
+*.vscode/
+*.idea/
+*.log
+node_modules/
+.nuget/
+.DS_Store
+.env

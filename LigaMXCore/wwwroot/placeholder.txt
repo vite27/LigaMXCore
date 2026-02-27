@@ -1,0 +1,1 @@
+static assets folder for ASP.NET Core (wwwroot)
