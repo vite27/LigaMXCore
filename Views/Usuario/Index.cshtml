@@ -1,0 +1,35 @@
+@model IEnumerable<LigaMXCore.Models.Usuario>
+
+@{
+    ViewData["Title"] = "Usuarios";
+    Layout = "_Layout";
+}
+
+<h1>Participantes</h1>
+
+<p>
+    <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nombre de Usuario</th>
+            <th>Contraseña</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model)
+{
+        <tr>
+            <td>@item.UsuarioId</td>
+            <td>@item.UsuarioNombre</td>
+            <td>@item.Password</td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.UsuarioId" class="btn btn-sm btn-primary">Editar</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

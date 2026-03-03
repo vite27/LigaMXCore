@@ -13,4 +13,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.8" />
   </ItemGroup>
+
+  <!-- Nota: SqliteRunner se movió a tools/SqliteRunner; ya no es necesario excluir archivos. -->
 </Project>

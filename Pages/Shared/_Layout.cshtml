@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Liga MX</title>
+    <!-- Aquí irían tus enlaces CSS (Bootstrap, etc.) -->
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>Inicio</h1>
+            <!-- Menú de navegación común -->
+        </nav>
+    </header>
+    
+    <div class="container">
+        <main role="main">
+            <!-- AQUÍ SE CARGA EL CONTENIDO DE LAS VISTAS ESPECÍFICAS -->
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 - Mi Aplicación - <a href="/Privacy">Privacidad</a></p>
+    </footer>
+
+    <!-- Aquí irían tus scripts JS -->
+    @RenderSection("Scripts", required: false)
+</body>
+<script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+</html>

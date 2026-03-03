@@ -1,5 +1,14 @@
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
     ViewData["Title"] = "Inicio";
+    Layout = "_Layout";
 }
-<h1>Proyecto prototipo ASP.NET Core</h1>
-<p>Ruta inicial</p>
+<p>
+    <a asp-controller="Pais" asp-action="Index" class="btn btn-primary">Países</a>
+    <a asp-controller="EstatusJornada" asp-action="Index" class="btn btn-primary">Estatus de la Jornada</a>
+    <a asp-controller="EstatusPartido" asp-action="Index" class="btn btn-primary">Estatus del Partido</a>
+    <a asp-controller="Participante" asp-action="Index" class="btn btn-primary">Participantes</a>
+    <a asp-controller="Temporada" asp-action="Index" class="btn btn-primary">Temporadas</a>
+    <a asp-controller="TipoResultado" asp-action="Index" class="btn btn-primary">Tipos de Resultado</a>
+    <a asp-controller="Usuario" asp-action="Index" class="btn btn-primary">Usuarios</a>
+</p>

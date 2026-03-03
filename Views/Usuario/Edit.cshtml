@@ -1,0 +1,35 @@
+@model LigaMXCore.Models.Usuario
+
+@{
+    ViewData["Title"] = "Editar Usuario";
+    Layout = "_Layout";
+}
+
+<h1>Editar Usuario</h1>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <input type="hidden" asp-for="UsuarioId" />
+
+    <div class="form-group">
+        <label asp-for="UsuarioNombre" class="control-label">Nombre de Usuario</label>
+        <input asp-for="UsuarioNombre" class="form-control" />
+
+        <span asp-validation-for="UsuarioNombre" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Password" class="control-label">Contraseña</label>
+        <input asp-for="Password" class="form-control" />
+
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

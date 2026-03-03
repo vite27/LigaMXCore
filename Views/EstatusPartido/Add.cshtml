@@ -1,0 +1,26 @@
+@model LigaMXCore.Models.EstatusPartido
+
+@{
+    ViewData["Title"] = "Agregar Estatus de Partido";
+    Layout = "_Layout";
+}
+
+<h1>Agregar Estatus de Partido</h1>
+
+<form asp-action="Add" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    
+    <div class="form-group">
+        <label asp-for="EstatusPartidoNombre" class="control-label">Estatus de Partido</label>
+        <input asp-for="EstatusPartidoNombre" class="form-control" />
+        <span asp-validation-for="EstatusPartidoNombre" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Agregar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

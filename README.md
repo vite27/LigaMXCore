@@ -38,3 +38,21 @@ El archivo `README_MIGRATE.md` contiene notas históricas de la migración desde
 ---
 
 ¡Disfruta explorando el proyecto!
+
+## Utilidad SqliteRunner
+
+Hay una utilidad en `tools/SqliteRunner` que crea y valida la base de datos SQLite (`Data/liga.db`) usando los scripts `Data/sqlite_create.sql` y `Data/sqlite_fill_base.sql`.
+
+- Para ejecutar la utilidad desde la raíz del repositorio:
+
+```powershell
+dotnet run --project tools/SqliteRunner/SqliteRunner.csproj
+```
+
+Para ver solo las comprobaciones sin recrear la base:
+
+```powershell
+dotnet run --project tools/SqliteRunner/SqliteRunner.csproj -- check
+```
+
+Consulta `tools/SqliteRunner/README.md` para más detalles.
