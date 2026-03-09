@@ -6,7 +6,7 @@
     Layout = "_Layout";
 }
 
-<h1>Estatus de Jornadas</h1>
+<h1>@ViewData["Title"]</h1>
 <p>
     <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
 </p>
@@ -33,8 +33,6 @@
     </tbody>
 </table>
 
-<table>
-    <td>
-        <a asp-action="Add" class="btn btn-sm btn-primary">Nuevo</a>
-    </td>
-</table>
+<p>
+    <a asp-action="Add" class="btn btn-primary">Nuevo</a>
+</p>

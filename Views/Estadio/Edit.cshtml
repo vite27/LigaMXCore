@@ -1,0 +1,58 @@
+@model LigaMXCore.Models.Estadio
+
+@{
+    ViewData["Title"] = "Editar Estadio";
+    Layout = "_Layout";
+}
+
+<h1>Editar Estado</h1>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <input type="hidden" asp-for="EstadioId" />
+
+    <div class="form-group">
+        <label asp-for="EstadioNombre" class="control-label">Nombre del Estadio</label>
+        <input asp-for="EstadioNombre" class="form-control" />
+
+        <span asp-validation-for="EstadioNombre" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Alias" class="control-label">Alias</label>
+        <input asp-for="Alias" class="form-control" />
+
+        <span asp-validation-for="Alias" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Direccion" class="control-label">Dirección</label>
+        <input asp-for="Direccion" class="form-control" />
+
+        <span asp-validation-for="Direccion" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="CodigoPostal" class="control-label">Código Postal</label>
+        <input asp-for="CodigoPostal" class="form-control" />
+
+        <span asp-validation-for="CodigoPostal" class="text-danger"></span>
+    </div>    
+
+    <div class="form-group">
+        <label asp-for="MunicipioId" class="control-label">Municipio</label>
+        <select asp-for="MunicipioId" class="form-control" asp-items="ViewBag.MunicipioId">
+            <option value="">-- Seleccione un Municipio --</option>
+        </select>
+        <span asp-validation-for="MunicipioId" class="text-danger"></span>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

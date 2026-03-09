@@ -13,6 +13,7 @@ public partial class Estadio
     public int EstadioId { get; set; }
 
     [Column("Estadio")]
+     [Required(ErrorMessage = "El nombre del estadio es obligatorio.")]
     public string EstadioNombre { get; set; } = null!;
 
     public string? Alias { get; set; }
@@ -21,6 +22,7 @@ public partial class Estadio
 
     public string? CodigoPostal { get; set; }
 
+    [Required(ErrorMessage = "El municipio es obligatorio.")]
     public int MunicipioId { get; set; }
 
     [InverseProperty("Estadio")]

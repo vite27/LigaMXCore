@@ -12,9 +12,11 @@ public partial class Estado
     [Key]
     public int EstadoId { get; set; }
 
+    [Required(ErrorMessage = "El nombre del estado es obligatorio.")]
     [Column("Estado")]
     public string EstadoNombre { get; set; } = null!;
 
+    [Required(ErrorMessage = "El país es obligatorio.")]
     public int PaisId { get; set; }
 
     [InverseProperty("Estado")]

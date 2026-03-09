@@ -1,0 +1,34 @@
+@model LigaMXCore.Models.Estado
+
+@{
+    ViewData["Title"] = "Agregar Estados";
+    Layout = "_Layout";
+}
+
+<h1>Agregar Estados</h1>
+
+<form asp-action="Add" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    
+    <div class="form-group">
+        <label asp-for="PaisId" class="control-label">País</label>
+        <select asp-for="PaisId" class="form-control" asp-items="ViewBag.PaisId">
+            <option value="">-- Seleccione un País --</option>
+        </select>
+        <span asp-validation-for="PaisId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="EstadoNombre" class="control-label">Nombre del Estado</label>
+        <input asp-for="EstadoNombre" class="form-control" />
+        <span asp-validation-for="EstadoNombre" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Agregar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
