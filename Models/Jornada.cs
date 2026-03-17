@@ -13,6 +13,7 @@ public partial class Jornada
 
     public int Orden { get; set; }
 
+    [Column("Jornada")]
     public string JornadaNombre { get; set; } = null!;
 
     public int TemporadaId { get; set; }

@@ -1,0 +1,44 @@
+@model LigaMXCore.Models.Jornada
+
+@{
+    ViewData["Title"] = "Editar Jornada";
+    Layout = "_Layout";
+}
+
+<h1>Editar Jornada</h1>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <input type="hidden" asp-for="JornadaId" />
+
+    <div class="form-group">
+        <label asp-for="TemporadaId" class="control-label">* Temporada</label>
+        <select asp-for="TemporadaId" class="form-control" asp-items="ViewBag.TemporadaId">
+            <option value="">-- Seleccione --</option>
+        </select>
+        <span asp-validation-for="TemporadaId" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <label asp-for="JornadaNombre" class="control-label">* Nombre de la Jornada</label>
+        <input asp-for="JornadaNombre" class="form-control" />
+
+        <span asp-validation-for="JornadaNombre" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Orden" class="control-label">* Orden</label>
+        <input asp-for="Orden" class="form-control" />
+
+        <span asp-validation-for="Orden" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,36 @@
+@model LigaMXCore.Models.Partido
+
+@{
+    ViewData["Title"] = "Agregar Partidos";
+    Layout = "_Layout";
+}
+
+<h1>Agregar Partidos</h1>
+
+<form asp-action="Add" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    
+    <div class="form-group">
+        <label asp-for="EquipoLocalId" class="control-label">* Equipo Local</label>
+        <select asp-for="EquipoLocalId" class="form-control" asp-items="ViewBag.EquipoLocalId">
+            <option value="">-- Seleccione --</option>
+        </select>
+        <span asp-validation-for="EquipoLocalId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="EquipoVisitaId" class="control-label">* Equipo Visita</label>
+        <select asp-for="EquipoVisitaId" class="form-control" asp-items="ViewBag.EquipoVisitaId">
+            <option value="">-- Seleccione --</option>
+        </select>
+        <span asp-validation-for="EquipoVisitaId" class="text-danger"></span>
+    </div>
+  
+    <button type="submit" class="btn btn-primary">Agregar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
