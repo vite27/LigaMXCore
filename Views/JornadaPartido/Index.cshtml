@@ -1,0 +1,48 @@
+@model IEnumerable<LigaMXCore.Models.JornadaPartido>
+
+@{
+    ViewData["Title"] = "Partidos de la Jornada";
+    Layout = "_Layout";
+}
+
+<h1>Partidos de la Jornada</h1>
+<p>
+    <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Jornada</th>
+            <th>Estadio</th>
+            <th>Local</th>
+            <th>Marcador</th>
+            <th>Visita</th>
+            <th>Estatus</th>
+            <th>Resultado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (LigaMXCore.Models.JornadaPartido item in Model)
+{
+        <tr>
+            <td>@item.Jornada.JornadaNombre</td>
+            <td>@item.Estadio.EstadioNombre</td>
+            <td>@item.Partido.EquipoLocal.EquipoNombre</td>
+            <td>@(item.GolLocal ?? 0) - @(item.GolVisita ?? 0)</td>
+            <td>@item.Partido.EquipoVisita.EquipoNombre</td>
+            <td>@item.EstatusPartido.EstatusPartidoNombre</td>
+            <td>@item.TipoResultado.TipoResultadoNombre</td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.JornadaPartidoId" class="btn btn-sm btn-primary">Editar</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+<table>
+    <td>
+        <a asp-action="Add" class="btn btn-sm btn-primary">Nuevo</a>
+    </td>
+</table>
