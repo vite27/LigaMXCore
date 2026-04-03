@@ -33,5 +33,13 @@ namespace LigaMXCore.Controllers
             return View(list);
         } 
 
+        // POST: /Jornada/Add
+        [HttpPost]
+        public JsonResult UpdateScores()
+        {
+
+          return Json(new { success = false, message = "Error al actualizar los marcadores" });  
+        }
+
     }
 }

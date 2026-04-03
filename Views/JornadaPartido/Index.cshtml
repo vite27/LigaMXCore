@@ -26,23 +26,45 @@
     <tbody>
 @foreach (LigaMXCore.Models.JornadaPartido item in Model)
 {
-        <tr>
-            <td>@item.Jornada.JornadaNombre</td>
-            <td>@item.Estadio.EstadioNombre</td>
-            <td>@item.Partido.EquipoLocal.EquipoNombre</td>
-            <td>@(item.GolLocal ?? 0) - @(item.GolVisita ?? 0)</td>
-            <td>@item.Partido.EquipoVisita.EquipoNombre</td>
-            <td>@item.EstatusPartido.EstatusPartidoNombre</td>
-            <td>@item.TipoResultado.TipoResultadoNombre</td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.JornadaPartidoId" class="btn btn-sm btn-primary">Editar</a>
-            </td>
-        </tr>
+    <tr data-id="@item.JornadaPartidoId" class="match_score">
+        <td>
+            <input type="hidden" class="dato-input" name="JornadaId" value="@item.JornadaId" />
+            @item.Jornada.JornadaNombre
+        </td>
+        <td>
+            <input type="hidden" class="form-control dato-input" name="EstadioId" value="@item.EstadioId" />
+            @item.Estadio.EstadioNombre
+        </td>
+        <td>
+            <input type="hidden" class="form-control dato-input" name="PartidoId" value="@item.PartidoId" />
+            @item.Partido.EquipoLocal.EquipoNombre
+        </td>
+        <td>
+           <input type="text" name="golLocal" class="form-control dato-input" style="display:block; width: 40px;" value="@(item.GolLocal ?? 0)" />
+           <label class="control-label"> - </label>
+           <input type="text" name="golVisita" class="form-control dato-input" style="display:block; width: 40px;" value="@(item.GolVisita ?? 0)" />
+       </td>
+       <td>@item.Partido.EquipoVisita.EquipoNombre</td>
+       <td>
+           <input type="hidden" class="form-controldato-input" name="EstatusPartidoId" value="@item.EstatusPartidoId" />
+           @item.EstatusPartido.EstatusPartidoNombre
+       </td>
+       <td>
+           <input type="hidden" class="form-control dato-input" name="TipoResultadoId" value="@item.TipoResultadoId" />
+           @item.TipoResultado.TipoResultadoNombre
+        </td>
+        <td>
+           <a asp-action="Edit" asp-route-id="@item.JornadaPartidoId" class="btn btn-sm btn-primary">Editar</a>
+        </td>
+    </tr>
 }
     </tbody>
 </table>
 <table>
     <td>
         <a asp-action="Add" class="btn btn-sm btn-primary">Nuevo</a>
+    </td>
+     <td>
+        <a asp-action="Update" class="btn btn-sm btn-primary" id="btnUpdateScores">Actualizar</a>
     </td>
 </table>
