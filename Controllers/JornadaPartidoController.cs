@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using LigaMXCore.Data;
 using LigaMXCore.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Text.Json.Nodes;
 
 namespace LigaMXCore.Controllers
 {
@@ -35,10 +36,33 @@ namespace LigaMXCore.Controllers
 
         // POST: /Jornada/Add
         [HttpPost]
-        public JsonResult UpdateScores()
+        public JsonResult UpdateScores([FromBody] List<JornadaPartido> item) 
         {
+            try 
+            {
+                foreach (var partidoEnviado in item)
+                {
+                    var partidoDb = _context.JornadaPartidos.Find(partidoEnviado.JornadaPartidoId);
 
-          return Json(new { success = false, message = "Error al actualizar los marcadores" });  
+                    if (partidoDb != null)
+                    {
+                        partidoDb.GolLocal = partidoEnviado.GolLocal;
+                        partidoDb.GolVisita = partidoEnviado.GolVisita;
+                        partidoDb.EstatusPartidoId = partidoEnviado.EstatusPartidoId;
+                
+                        _context.Entry(partidoDb).State = EntityState.Modified;
+                    }
+                }
+
+                _context.SaveChanges();
+
+                return Json(new { success = true, message = $"{item.Count} marcadores actualizados correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al guardar: " + ex.Message });
+            }
+
         }
 
     }

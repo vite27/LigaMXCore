@@ -1,46 +1,53 @@
 $( document ).ready(function() {
   $('#btnUpdateScores').click(function(event) {
         event.preventDefault(); // Detiene la navegación
-        loadScores();
+        updateScores();
         // Aquí puedes agregar tu función de jQuery personalizada
     });
 
 
-  function loadScores() {
+  function updateScores() {
         var scores = [];
         $('.match_score').each(function() {
             var match = $(this);
             var scoreData = {
-                JornadaPartidoId: match.data('id'),
-                JornadaId: match.find('input[name="JornadaId"]').val(),
-                EstadioId: match.find('input[name="EstadioId"]').val(),
-                PartidoId: match.find('input[name="PartidoId"]').val(),
-                EstatusPartidoId: match.find('input[name="EstatusPartidoId"]').val(),
-                GolLocal: match.find('input[name="golLocal"]').val(),
-                GolVisita: match.find('input[name="golVisita"]').val()
+                JornadaPartidoId: parseInt(match.data('id')),
+                JornadaId: parseInt(match.find('input[name="JornadaId"]').val()),
+                EstadioId: parseInt(match.find('input[name="EstadioId"]').val()),
+                PartidoId: parseInt(match.find('input[name="PartidoId"]').val()),
+                GolLocal: parseInt(match.find('input[name="golLocal"]').val()),
+                GolVisita: parseInt(match.find('input[name="golVisita"]').val()),
+                EstatusPartidoId: parseInt(match.find('input[name="EstatusPartidoId"]').val()),
+                TipoResultadoId: parseInt(match.find('input[name="TipoResultadoId"]').val())
             };
             scores.push(scoreData);
         });
-        var jsonScores = JSON.stringify(scores);
-        console.log(jsonScores); // Para depurar, muestra el JSON en consola
-        //return jsonScores; // Devuelve el JSON para usarlo después (ej. en AJAX)
+        
+        $.ajax({
+            // Usa la ruta absoluta con un "/" al inicio o el Helper de MVC
+            url: '/JornadaPartido/UpdateScores', 
+            type: 'POST',
+            // IMPORTANTE: No envuelvas 'scores' en otro objeto
+            data: JSON.stringify(scores), 
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            success: function (response) {
+                alert("Procesados: " + response.message);
+            },
+            error: function (xhr) {
+                console.error("Error: ", xhr.responseText);
+            }
+        });
     };
 
-      //$('.match_score').each(function() {
-      //    var fila = $(this);
-      //    var item = {
-      //        Id: fila.data('id') // Obtenemos el ID del atributo data
-      //    };
+    function updateScores_OnSuccess(response) {
+        alert(response.message);
+    }
 
-      //    alert('ID del partido: ' + item.Id); // Muestra el ID del partido en una alerta
+    function updateScores_OnError(response) {
+        alert(response.message);
+    }
 
-          // Recorremos los inputs dentro de esta fila para llenar el objeto
-          //fila.find('.dato-input').each(function() {
-          //    var input = $(this);
-          //    item[input.attr('name')] = input.val(); 
-      //  });
 
-          //listaProductos.push(item);
-  //};
 
 });
