@@ -42,8 +42,8 @@ de cada modelo. Cada fila indica qué catálogo(s) hay que consultar en
 | Catálogo | Bloqueado para Delete por... |
 |---|---|
 | **Pais** | `Estado.PaisId` ✅ *(implementado)* |
-| **Estado** | `Municipio.EstadoId` |
-| **Municipio** | `Equipo.MunicipioId`, `Estadio.MunicipioId` |
+| **Estado** | `Municipio.EstadoId` ✅ *(implementado)* |
+| **Municipio** | `Equipo.MunicipioId`, `Estadio.MunicipioId` ✅ *(implementado)* |
 | **Equipo** | `Partido.EquipoLocalId`, `Partido.EquipoVisitaId` (ambas direcciones) |
 | **Estadio** | `JornadaPartido.EstadioId` |
 | **Partido** | `JornadaPartido.PartidoId` |
@@ -67,10 +67,23 @@ invertir en su CRUD completo, vale la pena confirmar si se planea conectarlo a
 | Catálogo | Index | Add | Edit | Details | Delete | Validaciones (longitud/caracteres/duplicidad) |
 |---|---|---|---|---|---|---|
 | **Pais** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Estado** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ *(duplicidad acotada por país)* |
+| **Municipio** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ *(duplicidad acotada por estado; catálogo construido desde cero — no existía)* |
 
-### ⏳ Pendiente (todos los demás)
+Estado y Municipio se implementaron en paralelo con dos agentes independientes
+(cada uno en su propio git worktree), fusionados sin conflictos porque no
+comparten archivos (salvo una línea de navegación que Municipio agregó en
+`Views/Home/Index.cshtml`). Ambos fueron verificados en runtime contra los
+datos reales (`liga.db`), incluyendo el caso de bloqueo forzando un `POST`
+directo con un token antiforgery tomado de otra página.
 
-Todos los catálogos restantes tienen `Index` y, salvo `Temporada`/`TipoResultado`/`Usuario`, también `Add`/`Edit`. A ninguno se le ha aplicado `Details`, `Delete` ni validaciones de dato.
+### ⏳ Pendiente
+
+El resto de los catálogos (`Temporada`, `TipoResultado`, `Usuario`,
+`EstatusPartido`, `EstatusJornada`, `Participante`, `Equipo`, `Estadio`,
+`Partido`, `Jornada`, `JornadaPartido`) tienen `Index` y, salvo
+`Temporada`/`TipoResultado`/`Usuario`, también `Add`/`Edit`. A ninguno se le
+ha aplicado `Details`, `Delete` ni validaciones de dato todavía.
 
 ## Plan de trabajo futuro, por fases
 
@@ -94,12 +107,12 @@ llegar a los catálogos más enredados.
 | **EstatusJornada** | Mismo criterio que EstatusPartido — condicionado a resolver primero el hallazgo de la tabla anterior (catálogo huérfano). |
 | **Participante** | `Nombres`, `ApellidoPaterno`, `ApellidoMaterno`: requeridos, longitud 2–50 cada uno, solo letras/acentos/espacios (nombres de persona, no llevan números ni símbolos). Sin duplicidad estricta de nombre completo (dos personas pueden compartir nombre); posible validación suave de "nombre completo ya existe, ¿continuar?" en vez de bloqueo duro. |
 
-### Fase 3 — Catálogos con dependencia de un nivel
+### Fase 3 — Catálogos con dependencia de un nivel ✅ Completada
 
-| Catálogo | Depende de | Validaciones sugeridas |
+| Catálogo | Depende de | Validaciones aplicadas |
 |---|---|---|
-| **Estado** | Pais | `EstadoNombre`: requerido (ya existe), agregar longitud 3–50 y regex letras/acentos/espacios. Duplicidad de nombre **dentro del mismo país** (dos países distintos sí pueden tener un estado homónimo). |
-| **Municipio** | Estado | `MunicipioNombre`: requerido, longitud 3–80, letras/acentos/espacios. Duplicidad dentro del mismo Estado. |
+| **Estado** | Pais | `EstadoNombre`: requerido, longitud 3–100, regex letras/acentos/espacios. Duplicidad de nombre **dentro del mismo país**. |
+| **Municipio** | Estado | `MunicipioNombre`: requerido, longitud 3–80, letras/acentos/espacios. Duplicidad dentro del mismo Estado. Catálogo construido desde cero (no tenía controlador ni vistas). |
 
 ### Fase 4 — Catálogos con dependencia de dos niveles
 
