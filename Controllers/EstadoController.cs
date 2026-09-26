@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,9 +30,15 @@ namespace LigaMXCore.Controllers
         public async Task<IActionResult> Add([Bind("EstadoNombre,PaisId")] Estado estado)
         {
             ModelState.Remove("Pais");
+
+            if (!string.IsNullOrWhiteSpace(estado.EstadoNombre))
+                estado.EstadoNombre = estado.EstadoNombre.Trim();
+
+            await ValidarNombreDuplicado(estado.EstadoNombre, estado.PaisId, idActual: 0);
+
             if (!ModelState.IsValid)
             {
-                ViewData["PaisId"] = new SelectList(_context.Pais, "PaisId", "PaisNombre");
+                ViewData["PaisId"] = new SelectList(_context.Pais, "PaisId", "PaisNombre", estado.PaisId);
                 return View(estado);
             }
 
@@ -45,6 +52,21 @@ namespace LigaMXCore.Controllers
         {
             var list = await _context.Estados.Include(e => e.Pais).ToListAsync();
             return View(list);
+        }
+
+        // GET: /Estado/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+                return NotFound();
+
+            var estado = await _context.Estados.Include(e => e.Pais).FirstOrDefaultAsync(e => e.EstadoId == id.Value);
+            if (estado == null)
+                return NotFound();
+
+            ViewData["Dependencias"] = await ObtenerDependencias(id.Value);
+
+            return View(estado);
         }
 
         // GET: /Estado/Edit/5
@@ -70,6 +92,12 @@ namespace LigaMXCore.Controllers
                 return NotFound();
 
             ModelState.Remove("Pais");
+
+            if (!string.IsNullOrWhiteSpace(estado.EstadoNombre))
+                estado.EstadoNombre = estado.EstadoNombre.Trim();
+
+            await ValidarNombreDuplicado(estado.EstadoNombre, estado.PaisId, idActual: id);
+
             if (!ModelState.IsValid)
             {
                 ViewData["PaisId"] = new SelectList(_context.Pais, "PaisId", "PaisNombre", estado.PaisId);
@@ -92,9 +120,73 @@ namespace LigaMXCore.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // GET: /Estado/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+                return NotFound();
+
+            var estado = await _context.Estados.Include(e => e.Pais).FirstOrDefaultAsync(e => e.EstadoId == id.Value);
+            if (estado == null)
+                return NotFound();
+
+            ViewData["Dependencias"] = await ObtenerDependencias(id.Value);
+
+            return View(estado);
+        }
+
+        // POST: /Estado/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var estado = await _context.Estados.Include(e => e.Pais).FirstOrDefaultAsync(e => e.EstadoId == id);
+            if (estado == null)
+                return NotFound();
+
+            var dependencias = await ObtenerDependencias(id);
+            if (dependencias.Values.Sum() > 0)
+            {
+                ViewData["Dependencias"] = dependencias;
+                ModelState.AddModelError(string.Empty, "No se puede eliminar: existen registros dependientes en los catálogos listados.");
+                return View(estado);
+            }
+
+            _context.Estados.Remove(estado);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
+        }
+
         private bool EstadoExists(int id)
         {
             return _context.Estados.Any(e => e.EstadoId == id);
+        }
+
+        // Conteo por catálogo dependiente (sin cargar los registros completos, pensado
+        // para catálogos donde la dependencia puede ser muy amplia).
+        private async Task<Dictionary<string, int>> ObtenerDependencias(int estadoId)
+        {
+            return new Dictionary<string, int>
+            {
+                ["Municipios"] = await _context.Municipios.CountAsync(m => m.EstadoId == estadoId)
+            };
+        }
+
+        private async Task ValidarNombreDuplicado(string? nombre, int paisId, int idActual)
+        {
+            if (string.IsNullOrWhiteSpace(nombre))
+                return;
+
+            var estados = await _context.Estados
+                .Where(e => e.PaisId == paisId && e.EstadoId != idActual)
+                .ToListAsync();
+
+            var existe = estados.Exists(e =>
+                string.Equals(e.EstadoNombre?.Trim(), nombre, System.StringComparison.OrdinalIgnoreCase));
+
+            if (existe)
+                ModelState.AddModelError("EstadoNombre", "Ya existe un estado con ese nombre en este país.");
         }
     }
 }

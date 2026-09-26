@@ -27,7 +27,9 @@
             <td>@item.EstadoNombre</td>
             <td>@item.Pais?.PaisNombre</td>
             <td>
+                <a asp-action="Details" asp-route-id="@item.EstadoId" class="btn btn-sm btn-info">Detalles</a>
                 <a asp-action="Edit" asp-route-id="@item.EstadoId" class="btn btn-sm btn-primary">Editar</a>
+                <a asp-action="Delete" asp-route-id="@item.EstadoId" class="btn btn-sm btn-danger">Eliminar</a>
             </td>
         </tr>
 }
