@@ -12,9 +12,13 @@ public partial class Municipio
     [Key]
     public int MunicipioId { get; set; }
 
+    [Required(ErrorMessage = "El nombre del municipio es obligatorio.")]
+    [StringLength(80, MinimumLength = 3, ErrorMessage = "El nombre debe tener entre 3 y 80 caracteres.")]
+    [RegularExpression(@"^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s\.\-']+$", ErrorMessage = "El nombre solo puede contener letras, espacios, puntos, guiones y apóstrofos.")]
     [Column("Municipio")]
     public string MunicipioNombre { get; set; } = null!;
 
+    [Required(ErrorMessage = "El estado es obligatorio.")]
     public int EstadoId { get; set; }
 
     [InverseProperty("Municipio")]

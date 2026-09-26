@@ -1,0 +1,45 @@
+@model IEnumerable<LigaMXCore.Models.Municipio>
+
+@{
+    ViewData["Title"] = "Catálogo de Municipios";
+    Layout = "_Layout";
+}
+
+<h1>Municipios</h1>
+
+<p>
+    <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model)
+{
+        <tr>
+            <td>@item.MunicipioId</td>
+            <td>@item.MunicipioNombre</td>
+            <td>@item.Estado?.EstadoNombre</td>
+            <td>
+                <a asp-action="Details" asp-route-id="@item.MunicipioId" class="btn btn-sm btn-info">Detalles</a>
+                <a asp-action="Edit" asp-route-id="@item.MunicipioId" class="btn btn-sm btn-primary">Editar</a>
+                <a asp-action="Delete" asp-route-id="@item.MunicipioId" class="btn btn-sm btn-danger">Eliminar</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+<table>
+<tr>
+    <td>
+        <a asp-action="Add" class="btn btn-sm btn-primary">Nuevo</a>
+    </td>
+</tr>
+</table>
