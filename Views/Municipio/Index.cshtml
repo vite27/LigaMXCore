@@ -14,7 +14,6 @@
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Id</th>
             <th>Nombre</th>
             <th>Estado</th>
             <th></th>
@@ -24,7 +23,6 @@
 @foreach (var item in Model)
 {
         <tr>
-            <td>@item.MunicipioId</td>
             <td>@item.MunicipioNombre</td>
             <td>@item.Estado?.EstadoNombre</td>
             <td>

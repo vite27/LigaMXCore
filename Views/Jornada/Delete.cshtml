@@ -1,0 +1,64 @@
+@model LigaMXCore.Models.Jornada
+@using System.Collections.Generic
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Eliminar Jornada";
+    Layout = "_Layout";
+    var dependencias = ViewData["Dependencias"] as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var totalDependencias = dependencias.Values.Sum();
+}
+
+<h1>Eliminar Jornada</h1>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<dl class="row">
+    <dt class="col-sm-2">Id</dt>
+    <dd class="col-sm-10">@Model.JornadaId</dd>
+    <dt class="col-sm-2">Temporada</dt>
+    <dd class="col-sm-10">@Model.Temporada?.TemporadaNombre</dd>
+    <dt class="col-sm-2">Jornada</dt>
+    <dd class="col-sm-10">@Model.JornadaNombre</dd>
+    <dt class="col-sm-2">Orden</dt>
+    <dd class="col-sm-10">@Model.Orden</dd>
+    <dt class="col-sm-2">Estatus</dt>
+    <dd class="col-sm-10">@Model.EstatusJornada?.EstatusJornadaNombre</dd>
+</dl>
+
+<h3>Catálogos dependientes</h3>
+<table class="table table-sm table-striped">
+    <thead>
+        <tr>
+            <th>Catálogo</th>
+            <th>Registros asociados</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var dep in dependencias)
+    {
+        <tr>
+            <td>@dep.Key</td>
+            <td>@dep.Value</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (totalDependencias > 0)
+{
+    <div class="alert alert-danger">
+        No se puede eliminar: existen registros dependientes en los catálogos listados arriba.
+    </div>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+}
+else
+{
+    <p>¿Confirmas que deseas eliminar esta jornada?</p>
+    <form asp-action="Delete" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="JornadaId" />
+        <button type="submit" class="btn btn-danger">Eliminar</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </form>
+}

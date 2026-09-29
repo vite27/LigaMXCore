@@ -123,6 +123,8 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.JornadaId).ValueGeneratedOnAdd();
 
             entity.HasOne(d => d.Temporada).WithMany(p => p.Jornada).OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.EstatusJornada).WithMany(p => p.Jornadas).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         modelBuilder.Entity<Municipio>(entity =>

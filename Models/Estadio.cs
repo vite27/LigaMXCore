@@ -12,14 +12,19 @@ public partial class Estadio
     [Key]
     public int EstadioId { get; set; }
 
+    [Required(ErrorMessage = "El nombre del estadio es obligatorio.")]
+    [StringLength(80, MinimumLength = 3, ErrorMessage = "El nombre debe tener entre 3 y 80 caracteres.")]
     [Column("Estadio")]
-     [Required(ErrorMessage = "El nombre del estadio es obligatorio.")]
     public string EstadioNombre { get; set; } = null!;
 
+    [StringLength(50, MinimumLength = 2, ErrorMessage = "El alias debe tener entre 2 y 50 caracteres.")]
+    [RegularExpression(@"^[A-Za-zÁÉÍÓÚáéíóúÑñÜü0-9\s/.,'-]+$", ErrorMessage = "El alias contiene caracteres no permitidos.")]
     public string? Alias { get; set; }
 
+    [StringLength(200, ErrorMessage = "La dirección no puede exceder 200 caracteres.")]
     public string? Direccion { get; set; }
 
+    [RegularExpression(@"^\d{5}$", ErrorMessage = "El código postal debe tener 5 dígitos.")]
     public string? CodigoPostal { get; set; }
 
     [Required(ErrorMessage = "El municipio es obligatorio.")]

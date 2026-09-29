@@ -13,10 +13,8 @@
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Id</th>
             <th>Temporada</th>
             <th>Jornada</th>
-            <th>Orden</th>
             <th></th>
         </tr>
     </thead>
@@ -24,12 +22,12 @@
 @foreach (var item in Model)
 {
         <tr>
-            <td>@item.JornadaId</td>
             <td>@item.Temporada.TemporadaNombre</td>
             <td>@item.JornadaNombre</td>
-            <td>@item.Orden</td>
             <td>
+                <a asp-action="Details" asp-route-id="@item.JornadaId" class="btn btn-sm btn-info">Detalles</a>
                 <a asp-action="Edit" asp-route-id="@item.JornadaId" class="btn btn-sm btn-primary">Editar</a>
+                <a asp-action="Delete" asp-route-id="@item.JornadaId" class="btn btn-sm btn-danger">Eliminar</a>
             </td>
         </tr>
 }

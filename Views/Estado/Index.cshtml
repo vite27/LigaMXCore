@@ -10,10 +10,26 @@
     <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
 </p>
 
+<form method="get" asp-action="Index" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <label for="paisId" class="form-label">País</label>
+        <select name="paisId" id="paisId" class="form-select" asp-items="ViewBag.PaisId">
+            <option value="">Todos los países</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label for="nombre" class="form-label">Nombre</label>
+        <input type="text" name="nombre" id="nombre" value="@ViewData["NombreFiltro"]" class="form-control" placeholder="Buscar por nombre..." />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Limpiar filtros</a>
+    </div>
+</form>
+
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Id</th>
             <th>Nombre</th>
             <th>País</th>
             <th></th>
@@ -23,7 +39,6 @@
 @foreach (var item in Model)
 {
         <tr>
-            <td>@item.EstadoId</td>
             <td>@item.EstadoNombre</td>
             <td>@item.Pais?.PaisNombre</td>
             <td>

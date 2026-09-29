@@ -13,12 +13,8 @@
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Id</th>
             <th>Nombre</th>
             <th>Alias</th>
-            <th>Dirección</th>
-            <th>CP</th>
-            <th>Municipio</th>
             <th></th>
         </tr>
     </thead>
@@ -26,14 +22,12 @@
 @foreach (var item in Model)
 {
         <tr>
-            <td>@item.EstadioId</td>
             <td>@item.EstadioNombre</td>
             <td>@item.Alias</td>
-            <td>@item.Direccion</td>
-            <td>@item.CodigoPostal</td>
-            <td>@item.Municipio?.MunicipioNombre</td>
             <td>
+                <a asp-action="Details" asp-route-id="@item.EstadioId" class="btn btn-sm btn-info">Detalles</a>
                 <a asp-action="Edit" asp-route-id="@item.EstadioId" class="btn btn-sm btn-primary">Editar</a>
+                <a asp-action="Delete" asp-route-id="@item.EstadioId" class="btn btn-sm btn-danger">Eliminar</a>
             </td>
         </tr>
 }

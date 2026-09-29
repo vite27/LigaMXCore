@@ -12,16 +12,20 @@ public partial class JornadaPartido
     [Key]
     public int JornadaPartidoId { get; set; }
 
+    [Required(ErrorMessage = "La jornada es obligatoria.")]
     public int JornadaId { get; set; }
 
+    [Required(ErrorMessage = "El partido es obligatorio.")]
     public int PartidoId { get; set; }
 
+    [Required(ErrorMessage = "El estadio es obligatorio.")]
     public int EstadioId { get; set; }
 
     public int? GolLocal { get; set; }
 
     public int? GolVisita { get; set; }
 
+    [Required(ErrorMessage = "El estatus es obligatorio.")]
     public int EstatusPartidoId { get; set; }
 
     public int TipoResultadoId { get; set; }

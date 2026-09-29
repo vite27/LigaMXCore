@@ -48,9 +48,27 @@ namespace LigaMXCore.Controllers
         }
 
         // GET: /Estado
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? paisId, string? nombre)
         {
-            var list = await _context.Estados.Include(e => e.Pais).ToListAsync();
+            var query = _context.Estados.Include(e => e.Pais).AsQueryable();
+
+            if (paisId.HasValue)
+                query = query.Where(e => e.PaisId == paisId.Value);
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+            {
+                var patron = "%" + QuitarAcentos(nombre.Trim()) + "%";
+                query = query.Where(e => EF.Functions.Like(
+                    e.EstadoNombre
+                        .Replace("Á", "a").Replace("É", "e").Replace("Í", "i").Replace("Ó", "o").Replace("Ú", "u").Replace("Ü", "u").Replace("Ñ", "n")
+                        .Replace("á", "a").Replace("é", "e").Replace("í", "i").Replace("ó", "o").Replace("ú", "u").Replace("ü", "u").Replace("ñ", "n"),
+                    patron));
+            }
+
+            ViewData["PaisId"] = new SelectList(_context.Pais, "PaisId", "PaisNombre", paisId);
+            ViewData["NombreFiltro"] = nombre;
+
+            var list = await query.ToListAsync();
             return View(list);
         }
 
@@ -161,6 +179,24 @@ namespace LigaMXCore.Controllers
         private bool EstadoExists(int id)
         {
             return _context.Estados.Any(e => e.EstadoId == id);
+        }
+
+        // Normaliza el término de búsqueda a minúsculas sin acentos, para que coincida
+        // con la misma normalización aplicada a EstadoNombre en el filtro de Index
+        // (ver el Replace en cadena ahí, que SQLite sí puede traducir a SQL).
+        private static string QuitarAcentos(string texto)
+        {
+            var mapa = new Dictionary<char, char>
+            {
+                ['á'] = 'a', ['é'] = 'e', ['í'] = 'i', ['ó'] = 'o', ['ú'] = 'u', ['ü'] = 'u', ['ñ'] = 'n'
+            };
+
+            var minuscula = texto.ToLowerInvariant();
+            var resultado = new System.Text.StringBuilder(minuscula.Length);
+            foreach (var c in minuscula)
+                resultado.Append(mapa.TryGetValue(c, out var reemplazo) ? reemplazo : c);
+
+            return resultado.ToString();
         }
 
         // Conteo por catálogo dependiente (sin cargar los registros completos, pensado

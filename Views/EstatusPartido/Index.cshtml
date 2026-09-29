@@ -14,7 +14,6 @@
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Id</th>
             <th>Estatus</th>
             <th></th>
         </tr>
@@ -23,10 +22,11 @@
 @foreach (EstatusPartido item in Model)
 {
         <tr>
-            <td>@item.EstatusPartidoId</td>
             <td>@item.EstatusPartidoNombre</td>
             <td>
+                <a asp-action="Details" asp-route-id="@item.EstatusPartidoId" class="btn btn-sm btn-info">Detalles</a>
                 <a asp-action="Edit" asp-route-id="@item.EstatusPartidoId" class="btn btn-sm btn-primary">Editar</a>
+                <a asp-action="Delete" asp-route-id="@item.EstatusPartidoId" class="btn btn-sm btn-danger">Eliminar</a>
             </td>
         </tr>
 }

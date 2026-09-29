@@ -1,0 +1,26 @@
+@model LigaMXCore.Models.TipoResultado
+
+@{
+    ViewData["Title"] = "Agregar Tipo de Resultado";
+    Layout = "_Layout";
+}
+
+<h1>Agregar Tipo de Resultado</h1>
+
+<form asp-action="Add" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="form-group">
+        <label asp-for="TipoResultadoNombre" class="control-label">Tipo de Resultado</label>
+        <input asp-for="TipoResultadoNombre" class="form-control" />
+        <span asp-validation-for="TipoResultadoNombre" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Agregar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

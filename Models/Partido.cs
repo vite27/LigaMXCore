@@ -12,8 +12,10 @@ public partial class Partido
     [Key]
     public int PartidoId { get; set; }
 
+    [Required(ErrorMessage = "El equipo local es obligatorio.")]
     public int EquipoLocalId { get; set; }
 
+    [Required(ErrorMessage = "El equipo visitante es obligatorio.")]
     public int EquipoVisitaId { get; set; }
 
     [ForeignKey("EquipoLocalId")]

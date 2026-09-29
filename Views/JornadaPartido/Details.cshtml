@@ -1,0 +1,60 @@
+@model LigaMXCore.Models.JornadaPartido
+@using System.Collections.Generic
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Detalle de Partido de Jornada";
+    Layout = "_Layout";
+    var dependencias = ViewData["Dependencias"] as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var totalDependencias = dependencias.Values.Sum();
+}
+
+<h1>Detalle de Partido de Jornada</h1>
+
+<dl class="row">
+    <dt class="col-sm-2">Id</dt>
+    <dd class="col-sm-10">@Model.JornadaPartidoId</dd>
+    <dt class="col-sm-2">Temporada</dt>
+    <dd class="col-sm-10">@Model.Jornada?.Temporada?.TemporadaNombre</dd>
+    <dt class="col-sm-2">Jornada</dt>
+    <dd class="col-sm-10">@Model.Jornada?.JornadaNombre</dd>
+    <dt class="col-sm-2">Partido</dt>
+    <dd class="col-sm-10">@Model.Partido?.EquipoLocal?.EquipoNombre vs @Model.Partido?.EquipoVisita?.EquipoNombre</dd>
+    <dt class="col-sm-2">Estadio</dt>
+    <dd class="col-sm-10">@Model.Estadio?.EstadioNombre</dd>
+    <dt class="col-sm-2">Marcador</dt>
+    <dd class="col-sm-10">@(Model.GolLocal ?? 0) - @(Model.GolVisita ?? 0)</dd>
+    <dt class="col-sm-2">Estatus</dt>
+    <dd class="col-sm-10">@Model.EstatusPartido?.EstatusPartidoNombre</dd>
+    <dt class="col-sm-2">Resultado</dt>
+    <dd class="col-sm-10">@Model.TipoResultado?.TipoResultadoNombre</dd>
+</dl>
+
+<h3>Catálogos dependientes</h3>
+<table class="table table-sm table-striped">
+    <thead>
+        <tr>
+            <th>Catálogo</th>
+            <th>Registros asociados</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var dep in dependencias)
+    {
+        <tr>
+            <td>@dep.Key</td>
+            <td>@dep.Value</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (totalDependencias == 0)
+{
+    <p class="text-muted">Sin dependencias — este registro puede eliminarse sin riesgo.</p>
+}
+
+<p>
+    <a asp-action="Edit" asp-route-id="@Model.JornadaPartidoId" class="btn btn-sm btn-primary">Editar</a>
+    <a asp-action="Index" class="btn btn-sm btn-secondary">Volver</a>
+</p>

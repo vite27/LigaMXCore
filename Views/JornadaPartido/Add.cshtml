@@ -1,0 +1,54 @@
+@model LigaMXCore.Models.JornadaPartido
+
+@{
+    ViewData["Title"] = "Agregar Partido a Jornada";
+    Layout = "_Layout";
+}
+
+<h1>Agregar Partido a Jornada</h1>
+
+<form asp-action="Add" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="form-group">
+        <label asp-for="JornadaId" class="control-label">* Jornada</label>
+        <select asp-for="JornadaId" class="form-control" asp-items="ViewBag.JornadaId">
+            <option value="">-- Seleccione --</option>
+        </select>
+        <span asp-validation-for="JornadaId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="PartidoId" class="control-label">* Partido</label>
+        <select asp-for="PartidoId" class="form-control" asp-items="ViewBag.PartidoId">
+            <option value="">-- Seleccione --</option>
+        </select>
+        <span asp-validation-for="PartidoId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="EstadioId" class="control-label">* Estadio</label>
+        <select asp-for="EstadioId" class="form-control" asp-items="ViewBag.EstadioId">
+            <option value="">-- Seleccione --</option>
+        </select>
+        <span asp-validation-for="EstadioId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="EstatusPartidoId" class="control-label">* Estatus</label>
+        <select asp-for="EstatusPartidoId" class="form-control" asp-items="ViewBag.EstatusPartidoId">
+            <option value="">-- Seleccione --</option>
+        </select>
+        <span asp-validation-for="EstatusPartidoId" class="text-danger"></span>
+    </div>
+
+    <p class="text-muted">El marcador y el tipo de resultado se capturan más adelante desde el listado de la jornada; un partido nuevo se crea con marcador 0-0 y resultado "Empate" hasta que se juegue.</p>
+
+    <button type="submit" class="btn btn-primary">Agregar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

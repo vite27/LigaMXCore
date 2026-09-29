@@ -1,0 +1,48 @@
+@model LigaMXCore.Models.EstatusPartido
+@using System.Collections.Generic
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Detalle de Estatus de Partido";
+    Layout = "_Layout";
+    var dependencias = ViewData["Dependencias"] as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var totalDependencias = dependencias.Values.Sum();
+}
+
+<h1>Detalle de Estatus de Partido</h1>
+
+<dl class="row">
+    <dt class="col-sm-2">Id</dt>
+    <dd class="col-sm-10">@Model.EstatusPartidoId</dd>
+    <dt class="col-sm-2">Estatus</dt>
+    <dd class="col-sm-10">@Model.EstatusPartidoNombre</dd>
+</dl>
+
+<h3>Catálogos dependientes</h3>
+<table class="table table-sm table-striped">
+    <thead>
+        <tr>
+            <th>Catálogo</th>
+            <th>Registros asociados</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var dep in dependencias)
+    {
+        <tr>
+            <td>@dep.Key</td>
+            <td>@dep.Value</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (totalDependencias == 0)
+{
+    <p class="text-muted">Sin dependencias — este estatus puede eliminarse sin riesgo.</p>
+}
+
+<p>
+    <a asp-action="Edit" asp-route-id="@Model.EstatusPartidoId" class="btn btn-sm btn-primary">Editar</a>
+    <a asp-action="Index" class="btn btn-sm btn-secondary">Volver</a>
+</p>
