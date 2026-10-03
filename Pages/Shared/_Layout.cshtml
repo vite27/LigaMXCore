@@ -1,3 +1,4 @@
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,15 +7,54 @@
     <title>@ViewData["Title"] - Liga MX</title>
     <!-- Aquí irían tus enlaces CSS (Bootstrap, etc.) -->
     <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
 </head>
 <body>
     <header>
-        <nav>
-            <h1>Inicio</h1>
-            <!-- Menú de navegación común -->
+        <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">Liga MX</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu" aria-controls="navbarMenu" aria-expanded="false" aria-label="Alternar navegación">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarMenu">
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="menuConfiguracion" role="button" data-bs-toggle="dropdown" aria-expanded="false">Configuración</a>
+                            <ul class="dropdown-menu" aria-labelledby="menuConfiguracion">
+                                <li><a class="dropdown-item" asp-controller="Pais" asp-action="Index">Países</a></li>
+                                <li><a class="dropdown-item" asp-controller="Estado" asp-action="Index">Estados</a></li>
+                                <li><a class="dropdown-item" asp-controller="Municipio" asp-action="Index">Municipios</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="EstatusJornada" asp-action="Index">Estatus de Jornada</a></li>
+                                <li><a class="dropdown-item" asp-controller="EstatusPartido" asp-action="Index">Estatus de Partido</a></li>
+                                <li><a class="dropdown-item" asp-controller="TipoResultado" asp-action="Index">Tipos de Resultado</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="menuCalendario" role="button" data-bs-toggle="dropdown" aria-expanded="false">Calendario</a>
+                            <ul class="dropdown-menu" aria-labelledby="menuCalendario">
+                                <li><a class="dropdown-item" asp-controller="Temporada" asp-action="Index">Temporadas</a></li>
+                                <li><a class="dropdown-item" asp-controller="Jornada" asp-action="Index">Jornadas</a></li>
+                                <li><a class="dropdown-item" asp-controller="Equipo" asp-action="Index">Equipos</a></li>
+                                <li><a class="dropdown-item" asp-controller="Estadio" asp-action="Index">Estadios</a></li>
+                                <li><a class="dropdown-item" asp-controller="Partido" asp-action="Index">Partidos</a></li>
+                                <li><a class="dropdown-item" asp-controller="JornadaPartido" asp-action="Index">Partidos por Jornada</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="menuQuiniela" role="button" data-bs-toggle="dropdown" aria-expanded="false">Quiniela</a>
+                            <ul class="dropdown-menu" aria-labelledby="menuQuiniela">
+                                <li><a class="dropdown-item" asp-controller="Participante" asp-action="Index">Participantes</a></li>
+                                <li><a class="dropdown-item" asp-controller="Usuario" asp-action="Index">Usuarios</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </nav>
     </header>
-    
+
     <div class="container">
         <main role="main">
             <!-- AQUÍ SE CARGA EL CONTENIDO DE LAS VISTAS ESPECÍFICAS -->

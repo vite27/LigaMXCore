@@ -18,12 +18,30 @@ namespace LigaMXCore.Controllers
         }
 
         // GET: /Partido
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? equipoLocalId, int? equipoVisitaId)
         {
-            var list = await _context.Partidos
+            var query = _context.Partidos
                 .Include(p => p.EquipoLocal)
                 .Include(p => p.EquipoVisita)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (equipoLocalId.HasValue && equipoVisitaId.HasValue && equipoLocalId == equipoVisitaId)
+            {
+                ViewData["ErrorFiltro"] = "El equipo local y el equipo visita no pueden ser el mismo. No se aplicó el filtro.";
+            }
+            else
+            {
+                if (equipoLocalId.HasValue)
+                    query = query.Where(p => p.EquipoLocalId == equipoLocalId.Value);
+
+                if (equipoVisitaId.HasValue)
+                    query = query.Where(p => p.EquipoVisitaId == equipoVisitaId.Value);
+            }
+
+            ViewData["EquipoLocalId"] = new SelectList(_context.Equipos, "EquipoId", "EquipoNombre", equipoLocalId);
+            ViewData["EquipoVisitaId"] = new SelectList(_context.Equipos, "EquipoId", "EquipoNombre", equipoVisitaId);
+
+            var list = await query.ToListAsync();
             return View(list);
         }
 

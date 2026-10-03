@@ -18,12 +18,34 @@ namespace LigaMXCore.Controllers
         }
 
         // GET: /Jornada
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? temporadaId, int? estatusJornadaId, string? nombre)
         {
-            var list = await _context.Jornada
+            var query = _context.Jornada
                 .Include(j => j.Temporada)
                 .Include(j => j.EstatusJornada)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (temporadaId.HasValue)
+                query = query.Where(j => j.TemporadaId == temporadaId.Value);
+
+            if (estatusJornadaId.HasValue)
+                query = query.Where(j => j.EstatusJornadaId == estatusJornadaId.Value);
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+            {
+                var patron = "%" + QuitarAcentos(nombre.Trim()) + "%";
+                query = query.Where(j => EF.Functions.Like(
+                    j.JornadaNombre
+                        .Replace("Á", "a").Replace("É", "e").Replace("Í", "i").Replace("Ó", "o").Replace("Ú", "u").Replace("Ü", "u").Replace("Ñ", "n")
+                        .Replace("á", "a").Replace("é", "e").Replace("í", "i").Replace("ó", "o").Replace("ú", "u").Replace("ü", "u").Replace("ñ", "n"),
+                    patron));
+            }
+
+            ViewData["TemporadaId"] = new SelectList(_context.Temporada, "TemporadaId", "TemporadaNombre", temporadaId);
+            ViewData["EstatusJornadaId"] = new SelectList(_context.EstatusJornada, "EstatusJornadaId", "EstatusJornadaNombre", estatusJornadaId);
+            ViewData["NombreFiltro"] = nombre;
+
+            var list = await query.ToListAsync();
             return View(list);
         }
 
@@ -179,6 +201,24 @@ namespace LigaMXCore.Controllers
         private bool JornadaExists(int id)
         {
             return _context.Jornada.Any(j => j.JornadaId == id);
+        }
+
+        // Normaliza el término de búsqueda a minúsculas sin acentos, para que coincida
+        // con la misma normalización aplicada a JornadaNombre en el filtro de Index
+        // (mismo criterio que EstadoController.QuitarAcentos).
+        private static string QuitarAcentos(string texto)
+        {
+            var mapa = new Dictionary<char, char>
+            {
+                ['á'] = 'a', ['é'] = 'e', ['í'] = 'i', ['ó'] = 'o', ['ú'] = 'u', ['ü'] = 'u', ['ñ'] = 'n'
+            };
+
+            var minuscula = texto.ToLowerInvariant();
+            var resultado = new System.Text.StringBuilder(minuscula.Length);
+            foreach (var c in minuscula)
+                resultado.Append(mapa.TryGetValue(c, out var reemplazo) ? reemplazo : c);
+
+            return resultado.ToString();
         }
 
         // Conteo por catálogo dependiente (sin cargar los registros completos, pensado

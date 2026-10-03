@@ -10,6 +10,36 @@
     <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
 </p>
 
+<form method="get" asp-action="Index" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <label for="jpTemporadaId" class="form-label">Temporada</label>
+        <select name="temporadaId" id="jpTemporadaId" class="form-select" asp-items="ViewBag.TemporadaId">
+            <option value="">Selecciona una temporada</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label for="jpJornadaId" class="form-label">Jornada</label>
+        <select name="jornadaId" id="jpJornadaId" class="form-select" asp-items="ViewBag.JornadaId">
+            <option value="">Todas las jornadas</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Buscar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Limpiar filtros</a>
+    </div>
+</form>
+
+@if ((bool?)ViewData["BusquedaRealizada"] == true && !Model.Any())
+{
+    <div class="alert alert-warning">No se encontraron partidos para los filtros seleccionados.</div>
+}
+else if ((bool?)ViewData["BusquedaRealizada"] != true)
+{
+    <div class="alert alert-info">Selecciona una Temporada y presiona "Buscar" para ver el fixture.</div>
+}
+
+@if (Model.Any())
+{
 <table class="table table-striped">
     <thead>
         <tr>
@@ -62,6 +92,7 @@
 }
     </tbody>
 </table>
+}
 <table>
     <td>
         <a asp-action="Add" class="btn btn-sm btn-primary">Nuevo</a>

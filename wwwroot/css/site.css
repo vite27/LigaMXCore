@@ -1,0 +1,49 @@
+:root {
+    --navbar-bg: #22313f;
+    --navbar-bg-active: #2c3e50;
+    --navbar-accent: #5dade2;
+    --navbar-text: #ecf0f1;
+    --navbar-text-muted: #bdc3c7;
+}
+
+.app-navbar {
+    background-color: var(--navbar-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-navbar .navbar-brand {
+    color: var(--navbar-text);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.app-navbar .nav-link {
+    color: var(--navbar-text-muted);
+}
+
+.app-navbar .nav-link:hover,
+.app-navbar .nav-link:focus,
+.app-navbar .nav-link.show {
+    color: var(--navbar-accent);
+}
+
+.app-navbar .dropdown-menu {
+    background-color: var(--navbar-bg-active);
+    border: none;
+    border-radius: 0.25rem;
+    box-shadow: none;
+}
+
+.app-navbar .dropdown-item {
+    color: var(--navbar-text);
+}
+
+.app-navbar .dropdown-item:hover,
+.app-navbar .dropdown-item:focus {
+    background-color: var(--navbar-accent);
+    color: var(--navbar-bg);
+}
+
+.app-navbar .dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.1);
+}

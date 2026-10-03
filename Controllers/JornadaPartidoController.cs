@@ -18,19 +18,69 @@ namespace LigaMXCore.Controllers
         }
 
         // GET: /JornadaPartido
-        public async Task<IActionResult> Index()
+        // No muestra ningún registro hasta que el usuario elige una Temporada y
+        // presiona "Buscar" (único catálogo de la Fase A con este comportamiento):
+        // su Index es además el grid editable de captura de marcadores
+        // (UpdateScores), así que cargar todo el historial de temporadas por
+        // defecto renderizaría cientos de inputs editables sin que el usuario lo
+        // haya pedido. Sin Temporada seleccionada, no se devuelve nada (decisión
+        // de producto explícita, a diferencia del resto de catálogos donde "sin
+        // filtro" significa "mostrar todo").
+        public async Task<IActionResult> Index(int? temporadaId, int? jornadaId)
         {
-            var list = await _context.JornadaPartidos
-                .Include(j => j.Jornada)
-                .Include(j => j.Partido)
-                    .ThenInclude(p => p.EquipoLocal)
-                .Include(j => j.Partido)
-                    .ThenInclude(p => p.EquipoVisita)
-                .Include(j => j.Estadio)
-                .Include(j => j.EstatusPartido)
-                .Include(j => j.TipoResultado)
-                .ToListAsync();
+            var huboBusqueda = Request.QueryString.HasValue;
+            var list = new List<JornadaPartido>();
+
+            if (temporadaId.HasValue)
+            {
+                var query = _context.JornadaPartidos
+                    .Include(j => j.Jornada)
+                    .Include(j => j.Partido)
+                        .ThenInclude(p => p.EquipoLocal)
+                    .Include(j => j.Partido)
+                        .ThenInclude(p => p.EquipoVisita)
+                    .Include(j => j.Estadio)
+                    .Include(j => j.EstatusPartido)
+                    .Include(j => j.TipoResultado)
+                    .Where(j => j.Jornada.TemporadaId == temporadaId.Value);
+
+                if (jornadaId.HasValue)
+                    query = query.Where(j => j.JornadaId == jornadaId.Value);
+
+                list = await query.ToListAsync();
+            }
+
+            var jornadas = temporadaId.HasValue
+                ? await _context.Jornada.Where(j => j.TemporadaId == temporadaId.Value).OrderBy(j => j.Orden).ToListAsync()
+                : new List<Jornada>();
+
+            ViewData["TemporadaId"] = new SelectList(_context.Temporada, "TemporadaId", "TemporadaNombre", temporadaId);
+            ViewData["JornadaId"] = new SelectList(jornadas, "JornadaId", "JornadaNombre", jornadaId);
+            ViewData["BusquedaRealizada"] = huboBusqueda;
+
             return View(list);
+        }
+
+        // GET: /JornadaPartido/JornadasPorTemporada/5
+        // Usado por el combo en cascada del filtro de Index (ver ligaMxCore.js).
+        // Devuelve TODAS las jornadas de la temporada (tengan o no partidos ya
+        // programados), porque este catálogo se usa tanto para capturar el
+        // fixture como para visualizar/editar resultados ya cargados. Sin
+        // antiforgery porque es solo lectura. temporadaId <= 0 devuelve vacío
+        // (no tiene sentido listar jornadas sin una temporada elegida).
+        [HttpGet("JornadaPartido/JornadasPorTemporada/{temporadaId}")]
+        public async Task<IActionResult> JornadasPorTemporada(int temporadaId)
+        {
+            if (temporadaId <= 0)
+                return Json(new List<object>());
+
+            var jornadas = await _context.Jornada
+                .Where(j => j.TemporadaId == temporadaId)
+                .OrderBy(j => j.Orden)
+                .Select(j => new { id = j.JornadaId, nombre = j.JornadaNombre })
+                .ToListAsync();
+
+            return Json(jornadas);
         }
 
         // POST: /JornadaPartido/UpdateScores

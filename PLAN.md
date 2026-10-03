@@ -394,10 +394,10 @@ el volumen de datos lo justifique).
 | Catálogo | Filtros | Cascada | Endpoint nuevo | Notas |
 |---|---|---|---|---|
 | **Estado** ✅ | País (combo) + texto (`EstadoNombre`) | No | Ninguno | Un solo nivel de dependencia (`Estado.PaisId`); no hay un tercer combo debajo que necesite acotarse. |
-| **Municipio** | País → Estado (combo, en cascada) + texto (`MunicipioNombre`) | Sí | `GET /Municipio/EstadosPorPais/{paisId}` | El caso ya detallado originalmente: repuebla el combo Estado según el País elegido. |
-| **Partido** | Equipo Local (combo) + Equipo Visita (combo) | No | Ninguno | Ambos combos usan el mismo catálogo `Equipo` pero son ejes independientes (no uno depende del otro), así que se filtran por separado y se combinan con AND. |
-| **Jornada** | Temporada (combo) + Estatus (combo) + texto (`JornadaNombre`) | No | Ninguno | `Temporada` y `EstatusJornada` son ejes independientes entre sí — sin jerarquía, sin cascada. |
-| **JornadaPartido** | Temporada → Jornada (combo, en cascada) + Estadio (combo) + Estatus de partido (combo) | Sí | `GET /JornadaPartido/JornadasPorTemporada/{temporadaId}` | El más complejo de los cinco: debe integrarse con el grid editable `UpdateScores` que ya vive en `Index` sin romper el guardado masivo — el filtro solo acota qué filas del fixture se muestran/editan, no cambia el flujo de guardado. |
+| **Municipio** ✅ | País → Estado (combo, en cascada) + texto (`MunicipioNombre`) | Sí | `GET /Municipio/EstadosPorPais/{paisId}` | El caso ya detallado originalmente: repuebla el combo Estado según el País elegido. |
+| **Partido** ✅ | Equipo Local (combo) + Equipo Visita (combo) | No | Ninguno | Ambos combos usan el mismo catálogo `Equipo` pero son ejes independientes (no uno depende del otro), así que se filtran por separado y se combinan con AND. |
+| **Jornada** ✅ | Temporada (combo) + Estatus (combo) + texto (`JornadaNombre`) | No | Ninguno | `Temporada` y `EstatusJornada` son ejes independientes entre sí — sin jerarquía, sin cascada. |
+| **JornadaPartido** ✅ (parcial) | Temporada → Jornada (combo, en cascada) + Estadio (combo) + Estatus de partido (combo) | Sí | `GET /JornadaPartido/JornadasPorTemporada/{temporadaId}` | El más complejo de los cinco. **Primera iteración completada** (Temporada + cascada a Jornada + comportamiento "sin carga inicial"); Estadio/Estatus de partido quedan pendientes para una siguiente iteración. |
 
 Cada fila se implementa y verifica de forma independiente (mismo criterio que
 las fases anteriores del plan), actualizando esta tabla conforme se completen.
@@ -447,3 +447,254 @@ agregó una normalización explícita para el alfabeto español acentuado
   combinado con el filtro de país (`paisId=1&nombre=mexico` → 2,
   `paisId=2&nombre=mexico` → 0) también correcto; caso sin resultados sigue en
   0 filas sin error.
+
+**Municipio — completado y verificado en runtime.** `MunicipioController.Index`
+acepta `paisId`/`estadoId`/`nombre` opcionales por query string sobre
+`Municipios.Include(Estado)`: `paisId` filtra vía `m.Estado.PaisId` (join
+implícito, sin tabla puente visible), `estadoId` filtra directo por FK, y
+`nombre` reutiliza el mismo patrón de `EstadoController` (`EF.Functions.Like`
++ cadena de `.Replace()` para insensibilidad a acentos/mayúsculas, con
+`QuitarAcentos` duplicado como método privado — mismo criterio que Estado, sin
+extraerlo a una clase compartida para no tocar un controlador que no estaba en
+el alcance de esta tarea). El combo Estado del filtro se puebla ya acotado al
+`paisId` seleccionado en cada render del servidor (para que al enviar el
+formulario con "Filtrar" no se muestren estados de otro país), y además se
+repuebla sin recargar la página vía cascada cliente-servidor.
+
+**Endpoint de cascada — bug encontrado y corregido antes de verificar.**
+`GET /Municipio/EstadosPorPais/{paisId}` inicialmente no tenía atributo de
+ruta explícito, así que caía en la ruta convencional del proyecto
+(`{controller}/{action}/{id?}` en `Program.cs`) — como el parámetro se llama
+`paisId` y no `id`, nunca se bindeaba desde la URL y el endpoint devolvía
+siempre los 33 estados completos sin filtrar, para cualquier país. Corregido
+agregando `[HttpGet("Municipio/EstadosPorPais/{paisId}")]` explícito.
+Reverificado: `paisId=1` (México) devuelve sus 32 estados sin incluir
+"Alabama", `paisId=2` (Estados Unidos) devuelve solo "Alabama", y `paisId=0`
+(caso "Todos los países" del combo padre) devuelve los 33. El handler de
+cascada en `ligaMxCore.js` usa ids exclusivos de esta vista (`muniPaisId`/
+`muniEstadoId`, distintos de los `paisId`/`estadoId` usados como `name` para
+el query string) para no interferir con el combo sin cascada de
+`Estado/Index` ni con los campos del formulario `Add`/`Edit` de Municipio
+(que usan el id generado por el tag helper, `EstadoId` con mayúscula) — al
+cambiar de país conserva el Estado seleccionado solo si sigue perteneciendo
+al nuevo país, igual que el comportamiento esperado al enviar el formulario.
+
+Verificado en runtime contra los 16 municipios reales (sin datos de prueba
+adicionales, funcionalidad de solo lectura): sin filtros (16 filas), filtro
+por `estadoId=14` (Jalisco → Zapopan y Guadalajara), filtro por `paisId=2`
+(Estados Unidos → 0 filas, ningún municipio cargado ahí todavía), texto
+insensible a acentos/mayúsculas (`leon` → León, `JUAREZ` → Ciudad Juárez,
+`torreon` → Torreón, `queretaro` → Querétaro), combinación `paisId=1&nombre=
+mexico` → Ciudad de México únicamente (no incluye Toluca, cuyo *Estado* se
+llama México pero cuyo nombre de municipio no coincide con el texto buscado,
+confirmando que el filtro de texto es sobre `MunicipioNombre` y no arrastra
+coincidencias del nombre del Estado), caso sin resultados (`nombre=xyzxyz` →
+0 filas sin error), combo Estado del filtro mostrando únicamente las 32
+opciones de México con Jalisco marcado como seleccionado tras filtrar por
+`paisId=1&estadoId=14`, y enlaces Detalles/Editar/Eliminar funcionando sobre
+las filas filtradas.
+
+**Partido — completado y verificado en runtime.** Se mantuvo el diseño
+original del plan (dos combos independientes, `Equipo Local` y `Equipo
+Visita`, combinados con AND vía `Index(int? equipoLocalId, int?
+equipoVisitaId)`), con un acotamiento decidido con el usuario antes de
+implementar — se evaluó y descartó una alternativa (un solo combo de Equipo
++ checkboxes de rol) por la ambigüedad de UX que introducía (desmarcar un
+checkbox no tiene efecto en un filtro por GET sin el patrón de "hidden
+companion" de MVC, y quedaba sin definir qué pasa con ambos checkboxes
+desmarcados):
+- Si solo se selecciona un combo, filtra únicamente por ese lado (local o
+  visita), el otro queda sin restricción.
+- Si no se selecciona ningún valor, se cargan todos los partidos (sin
+  filtro), igual que el resto de catálogos de la Fase A.
+- **Si se selecciona el mismo equipo en ambos combos, no se aplica ningún
+  filtro** (se cargan todos los partidos, igual que sin selección) y se
+  muestra una alerta: "El equipo local y el equipo visita no pueden ser el
+  mismo. No se aplicó el filtro." — consistente con la validación ya
+  existente en `Add`/`Edit` (`EquipoLocalId != EquipoVisitaId`), que hace que
+  ningún partido real tenga esa combinación.
+
+Verificado en runtime contra los 306 partidos reales (307 filas de `<tr>`
+contando el encabezado): sin filtros (307), solo `equipoLocalId=1` (América
+de local → 17 filas, uno por cada rival), solo `equipoVisitaId=1` (América de
+visita → 17 filas), combinación `equipoLocalId=1&equipoVisitaId=2` (América
+vs Atlas → 1 fila), caso bloqueado `equipoLocalId=1&equipoVisitaId=1` (alerta
+mostrada, 307 filas sin filtrar), combos reflejando la selección activa tras
+filtrar, y enlaces Detalles/Editar/Eliminar funcionando sobre la fila
+filtrada.
+
+**Jornada — completado y verificado en runtime.** `JornadaController.Index`
+acepta `temporadaId`/`estatusJornadaId`/`nombre` opcionales por query string,
+combinados con AND, sin cascada (ejes independientes, igual que estaba
+planeado). El filtro de texto reutiliza el mismo patrón de `Estado`/
+`Municipio` (`EF.Functions.Like` + `QuitarAcentos`) aunque `JornadaNombre` no
+tiene `[RegularExpression]` con acentos en el modelo — se aplicó igual por
+consistencia con el resto de catálogos y porque no tiene costo adicional.
+Carga inicial sin filtros muestra todas las jornadas (comportamiento pedido
+explícitamente por el usuario antes de implementar), y el filtro por
+Temporada acota a las de esa temporada únicamente.
+
+Verificado en runtime contra las 17 jornadas reales (todas en la temporada
+"Clausura 2026", id=1, con `EstatusJornadaId`=1 "Pendiente" tras el backfill
+de Fase 2) y la temporada "60vo. torneo corto" (id=2, recién creada, sin
+jornadas): sin filtros (17 filas), `temporadaId=1` (17), `temporadaId=2` (0),
+`estatusJornadaId=1` (17), `estatusJornadaId=2` "En Curso" (0), texto
+`JORNADA 2` en mayúsculas (1 fila, confirma insensibilidad a mayúsculas),
+combinación `temporadaId=1&estatusJornadaId=1` (17), combinación sin
+jerarquía real `temporadaId=2&estatusJornadaId=1` (0, sin error), caso sin
+resultados `nombre=xyzxyz` (0), combos reflejando la selección activa tras
+filtrar, y enlaces Detalles/Editar/Eliminar funcionando sobre filas
+filtradas.
+
+### JornadaPartido — primera iteración completada y verificada en runtime
+
+Implementado tal cual quedó acordado con el usuario tras resolver los puntos
+abiertos del diseño original (dejado íntegro más abajo como referencia):
+
+- **Corrección de la condición de carrera antes de continuar** (pedido
+  explícito del usuario): se generalizó la lógica de cascada de `Municipio` en
+  una función reutilizable `initCascada(selectPadreId, selectHijoId, urlBase,
+  textoTodos)` en `ligaMxCore.js`, que ahora usa un número de secuencia local
+  por cascada — cada petición AJAX se etiqueta con un contador incremental al
+  dispararse, y en el `success` se descarta cualquier respuesta cuyo número no
+  coincida con la última petición disparada (sin importar el orden en que
+  lleguen las respuestas). `Municipio` (País→Estado) se migró a esta función
+  compartida y `JornadaPartido` (Temporada→Jornada) la usa desde el día uno.
+  Verificado con la misma prueba de estrés que había reproducido el bug
+  original (cambiar el combo padre dos veces rápido, sin esperar la respuesta
+  de la primera llamada): **0 inconsistencias en 8 repeticiones para
+  Municipio y 8 para JornadaPartido** (antes del fix, Municipio fallaba 2 de
+  5 veces).
+- **Sin carga inicial**: `Index(int? temporadaId, int? jornadaId)` solo
+  consulta `JornadaPartidos` cuando `temporadaId` tiene valor; si no, devuelve
+  lista vacía sin tocar la base.
+- **"Buscar" sin Temporada no devuelve resultados** (confirmado por el
+  usuario): como no hay forma de distinguir "nunca se buscó" de "se buscó sin
+  elegir Temporada" solo mirando que el modelo esté vacío, se usa
+  `Request.QueryString.HasValue` para saber si la petición vino de un submit
+  del formulario (aunque haya ido con los combos en blanco) vs. la primera
+  carga de la página (sin query string en absoluto) — guardado en
+  `ViewData["BusquedaRealizada"]`.
+- **Mensaje de alerta cuando se buscó y no hay resultados** (pedido explícito
+  del usuario): `alert-warning` "No se encontraron partidos para los filtros
+  seleccionados." cuando `BusquedaRealizada == true` y el modelo viene vacío.
+  Antes de la primera búsqueda se muestra en cambio un `alert-info`
+  ("Selecciona una Temporada y presiona 'Buscar' para ver el fixture.") en
+  vez de alerta, para no confundir "todavía no buscaste" con "buscaste y no
+  hay nada".
+- **El combo Jornada de la cascada muestra todas las jornadas de la
+  temporada elegida**, tengan o no partidos ya programados (pedido explícito
+  del usuario: "ese catálogo servirá para capturar los resultados o
+  visualizarlos") — mismo criterio en el pre-poblado del servidor y en el
+  endpoint `GET /JornadaPartido/JornadasPorTemporada/{temporadaId}` (con ruta
+  explícita para evitar el mismo bug de binding ya encontrado en
+  `Municipio`). `temporadaId <= 0` devuelve `[]` (no tiene sentido listar
+  jornadas de "todas las temporadas" cuando el diseño exige elegir una).
+- Los botones "Nuevo" y "Actualizar" se mantienen siempre visibles (incluso
+  sin resultados) — "Nuevo" no depende del filtro, y "Actualizar" simplemente
+  no tiene filas `.match_score` sobre las que iterar cuando no hay resultados
+  (sin cambios necesarios en `updateScores()`).
+
+Verificado en runtime contra los datos reales (153 `JornadaPartido` de
+Clausura 2026, id=1; "60vo. torneo corto" id=2 sigue vacía): carga inicial sin
+query string (0 filas, `alert-info`, sin tabla), `Buscar` con combos en blanco
+— query string presente pero vacío (0 filas, `alert-warning`), `temporadaId=1`
+(153 filas, sin alerta), `temporadaId=2` (0 filas, `alert-warning`),
+`JornadasPorTemporada/1` (17), `JornadasPorTemporada/2` (0),
+`JornadasPorTemporada/0` (0, no "todas"), combinación
+`temporadaId=1&jornadaId=1` (9 filas, una jornada completa), combos
+reflejando la selección activa tras filtrar, enlaces Detalles/Editar/Eliminar
+funcionando sobre filas filtradas, y botones "Nuevo"/"Actualizar" presentes
+incluso con 0 resultados.
+
+Pendiente para una siguiente iteración: filtros de Estadio y Estatus de
+partido (ver fila de la tabla de arriba).
+
+### JornadaPartido — notas de diseño originales (referencia histórica, ya resueltas arriba)
+
+Alcance definido con el usuario, deliberadamente más chico que la fila completa
+de la tabla de arriba (Estadio/Estatus quedan para después):
+
+1. **Filtro de Temporada**: combo sobre `_context.Temporada`, igual que el
+   resto de catálogos de la Fase A.
+2. **Filtro en cascada Temporada → Jornada**: al elegir una Temporada, el
+   combo Jornada se acota a las jornadas de esa temporada — mismo patrón ya
+   validado en `Municipio` (País → Estado): combo hijo pre-poblado en el
+   servidor según el padre seleccionado + repoblado por AJAX sin recargar vía
+   un endpoint nuevo `GET /JornadaPartido/JornadasPorTemporada/{temporadaId}`.
+3. **Sin carga inicial**: a diferencia de `Estado`/`Municipio`/`Partido`/
+   `Jornada` (que muestran todo el catálogo sin filtros), `JornadaPartido/Index`
+   **no debe mostrar ninguna fila hasta que el usuario aplique "Buscar"**. Es
+   una excepción deliberada a la convención ya documentada en `CLAUDE.md`
+   ("casos borde... no requiere manejo especial", pensada para catálogos que
+   sí cargan todo por defecto) — justificada porque este es el único catálogo
+   cuyo `Index` además es un grid *editable* (`UpdateScores`): cargar todas
+   las jornadas de todas las temporadas por defecto significaría renderizar
+   cientos de inputs editables de golpe, algo que solo va a empeorar con cada
+   temporada nueva que se cargue.
+
+#### Mejoras / decisiones a confirmar antes de implementar
+
+- **Mensaje de estado vacío**: hay que distinguir en la vista dos casos que
+  hoy lucirían igual (tabla sin filas) — "todavía no se ha buscado nada" vs.
+  "se buscó y no hay resultados". Sugerido: un `ViewData["BusquedaRealizada"]`
+  (o equivalente) que el controlador setea cuando `temporadaId.HasValue`, para
+  mostrar un mensaje distinto en cada caso ("Selecciona una Temporada y
+  presiona Buscar" vs. "Sin partidos para los filtros seleccionados").
+- **¿Qué hace "Buscar" sin ninguna Temporada elegida?** Con el diseño actual
+  (no cargar nada hasta buscar), lo más consistente es que "Buscar" sin
+  Temporada se comporte igual que la carga inicial (sigue vacío, con el
+  mensaje de "selecciona una Temporada"), en vez de cargar todo el catálogo
+  como hacen los demás filtros del proyecto cuando no se selecciona nada. Vale
+  la pena confirmarlo explícitamente con el usuario porque es lo opuesto a la
+  convención usada en el resto de la Fase A.
+- **Alcance del combo Jornada en la cascada**: mostrar todas las jornadas de
+  la temporada elegida (tengan o no partidos programados todavía), igual
+  criterio que ya usa `CargarDropdowns` en `Add`/`Edit` de este mismo
+  controlador — así filtrar por una jornada vacía muestra "0 resultados" en
+  vez de ocultar la opción del combo.
+- **Interacción con el flujo `UpdateScores`**: el botón "Actualizar" y el JS
+  (`updateScores()` en `ligaMxCore.js`) iteran sobre las filas `.match_score`
+  presentes en el DOM al momento del click, sin importar su origen — como el
+  filtro es un `GET` de formulario normal (recarga de página, no AJAX/SPA),
+  debería seguir funcionando sin cambios sobre las filas que resulten del
+  filtro. Confirmar en runtime al implementar, no asumirlo solo por lectura
+  de código.
+
+#### Dificultad encontrada: replicar la cascada de Municipio replicaría también su bug
+
+La verificación con `/verify` de la cascada País→Estado de `Municipio`
+encontró una **condición de carrera real y reproducible** (2 de 5 intentos
+controlados): si el usuario cambia el combo padre dos veces seguido sin
+esperar a que la primera llamada AJAX resuelva, las respuestas de
+`/Municipio/EstadosPorPais/{paisId}` pueden resolver en orden distinto al que
+se dispararon, y la que llega *última* pisa a la que llega *primera* — el
+combo hijo queda mostrando datos de una selección anterior, sin ningún error
+visible. El endpoint nuevo que planea esta Acción 2
+(`/JornadaPartido/JornadasPorTemporada/{temporadaId}`) usaría exactamente el
+mismo patrón, así que replicarlo tal cual reproduciría el mismo bug por
+tercera vez (ya está también planeado para reutilizarse eventualmente en
+cualquier otro catálogo con cascada). **Recomendación: corregir esto al
+implementar** esta cascada (no en `Municipio` retroactivamente, a menos que
+el usuario lo pida aparte) agregando un token/contador de petición en
+`ligaMxCore.js` que descarte en el `success` cualquier respuesta que no
+corresponda a la última petición disparada, o usando `xhr.abort()` sobre la
+petición anterior antes de lanzar una nueva.
+
+#### Otros puntos a tener en cuenta (ya conocidos de catálogos anteriores)
+
+- El endpoint `JornadasPorTemporada/{temporadaId}` necesita ruta explícita
+  (`[HttpGet("JornadaPartido/JornadasPorTemporada/{temporadaId}")]`) — la ruta
+  convencional del proyecto es `{controller}/{action}/{id?}`, y como el
+  parámetro no se llama `id`, sin el atributo el filtro se ignoraría
+  silenciosamente (mismo bug ya encontrado y corregido en `Municipio`).
+- Los combos del filtro necesitan `id` HTML exclusivos de esta vista (ej.
+  `jpTemporadaId`/`jpJornadaId`) para no chocar con otros combos del mismo
+  nombre en otras páginas que comparten `ligaMxCore.js`.
+- **Limitación para probar en runtime**: hoy solo la Temporada "Clausura 2026"
+  (id=1) tiene datos reales (153 filas); la segunda Temporada ("60vo. torneo
+  corto", id=2) está vacía. Se puede probar "Temporada con datos" vs.
+  "Temporada vacía → sin resultados", pero no hay una segunda temporada con
+  partidos para probar que el filtro realmente *excluye* filas de otra
+  temporada (mismo tipo de limitación ya documentada para otros catálogos que
+  aún no tenían datos cruzados al momento de implementarse).

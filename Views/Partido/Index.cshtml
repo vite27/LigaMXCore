@@ -10,6 +10,30 @@
     <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
 </p>
 
+@if (ViewData["ErrorFiltro"] != null)
+{
+    <div class="alert alert-warning">@ViewData["ErrorFiltro"]</div>
+}
+
+<form method="get" asp-action="Index" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <label for="equipoLocalId" class="form-label">Equipo Local</label>
+        <select name="equipoLocalId" id="equipoLocalId" class="form-select" asp-items="ViewBag.EquipoLocalId">
+            <option value="">Todos los equipos</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label for="equipoVisitaId" class="form-label">Equipo Visita</label>
+        <select name="equipoVisitaId" id="equipoVisitaId" class="form-select" asp-items="ViewBag.EquipoVisitaId">
+            <option value="">Todos los equipos</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Limpiar filtros</a>
+    </div>
+</form>
+
 <table class="table table-striped">
     <thead>
         <tr>
@@ -25,8 +49,6 @@
             <td>@item.EquipoLocal?.EquipoNombre</td>
             <td>@item.EquipoVisita?.EquipoNombre</td>
             <td>
-                <a asp-action="Details" asp-route-id="@item.PartidoId" class="btn btn-sm btn-info">Detalles</a>
-                <a asp-action="Edit" asp-route-id="@item.PartidoId" class="btn btn-sm btn-primary">Editar</a>
                 <a asp-action="Delete" asp-route-id="@item.PartidoId" class="btn btn-sm btn-danger">Eliminar</a>
             </td>
         </tr>

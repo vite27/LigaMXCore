@@ -10,6 +10,29 @@
     <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
 </p>
 
+<form method="get" asp-action="Index" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <label for="temporadaId" class="form-label">Temporada</label>
+        <select name="temporadaId" id="temporadaId" class="form-select" asp-items="ViewBag.TemporadaId">
+            <option value="">Todas las temporadas</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label for="estatusJornadaId" class="form-label">Estatus</label>
+        <select name="estatusJornadaId" id="estatusJornadaId" class="form-select" asp-items="ViewBag.EstatusJornadaId">
+            <option value="">Todos los estatus</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label for="nombre" class="form-label">Nombre</label>
+        <input type="text" name="nombre" id="nombre" value="@ViewData["NombreFiltro"]" class="form-control" placeholder="Buscar por nombre..." />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Limpiar filtros</a>
+    </div>
+</form>
+
 <table class="table table-striped">
     <thead>
         <tr>

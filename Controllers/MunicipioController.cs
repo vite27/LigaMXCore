@@ -18,10 +18,55 @@ namespace LigaMXCore.Controllers
         }
 
         // GET: /Municipio
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? paisId, int? estadoId, string? nombre)
         {
-            var list = await _context.Municipios.Include(m => m.Estado).ToListAsync();
+            var query = _context.Municipios.Include(m => m.Estado).AsQueryable();
+
+            if (paisId.HasValue)
+                query = query.Where(m => m.Estado.PaisId == paisId.Value);
+
+            if (estadoId.HasValue)
+                query = query.Where(m => m.EstadoId == estadoId.Value);
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+            {
+                var patron = "%" + QuitarAcentos(nombre.Trim()) + "%";
+                query = query.Where(m => EF.Functions.Like(
+                    m.MunicipioNombre
+                        .Replace("Á", "a").Replace("É", "e").Replace("Í", "i").Replace("Ó", "o").Replace("Ú", "u").Replace("Ü", "u").Replace("Ñ", "n")
+                        .Replace("á", "a").Replace("é", "e").Replace("í", "i").Replace("ó", "o").Replace("ú", "u").Replace("ü", "u").Replace("ñ", "n"),
+                    patron));
+            }
+
+            var estadosQuery = _context.Estados.AsQueryable();
+            if (paisId.HasValue)
+                estadosQuery = estadosQuery.Where(e => e.PaisId == paisId.Value);
+
+            ViewData["PaisId"] = new SelectList(_context.Pais, "PaisId", "PaisNombre", paisId);
+            ViewData["EstadoId"] = new SelectList(await estadosQuery.OrderBy(e => e.EstadoNombre).ToListAsync(), "EstadoId", "EstadoNombre", estadoId);
+            ViewData["NombreFiltro"] = nombre;
+
+            var list = await query.ToListAsync();
             return View(list);
+        }
+
+        // GET: /Municipio/EstadosPorPais/5
+        // Usado por el combo en cascada del filtro de Index (ver ligaMxCore.js). Sin
+        // antiforgery porque es solo lectura. paisId <= 0 devuelve todos los estados
+        // (caso "Todos los países" del combo padre).
+        [HttpGet("Municipio/EstadosPorPais/{paisId}")]
+        public async Task<IActionResult> EstadosPorPais(int paisId)
+        {
+            var query = _context.Estados.AsQueryable();
+            if (paisId > 0)
+                query = query.Where(e => e.PaisId == paisId);
+
+            var estados = await query
+                .OrderBy(e => e.EstadoNombre)
+                .Select(e => new { id = e.EstadoId, nombre = e.EstadoNombre })
+                .ToListAsync();
+
+            return Json(estados);
         }
 
         // GET: /Municipio/Details/5
@@ -162,6 +207,24 @@ namespace LigaMXCore.Controllers
         private bool MunicipioExists(int id)
         {
             return _context.Municipios.Any(e => e.MunicipioId == id);
+        }
+
+        // Normaliza el término de búsqueda a minúsculas sin acentos, para que coincida
+        // con la misma normalización aplicada a MunicipioNombre en el filtro de Index
+        // (mismo criterio que EstadoController.QuitarAcentos).
+        private static string QuitarAcentos(string texto)
+        {
+            var mapa = new Dictionary<char, char>
+            {
+                ['á'] = 'a', ['é'] = 'e', ['í'] = 'i', ['ó'] = 'o', ['ú'] = 'u', ['ü'] = 'u', ['ñ'] = 'n'
+            };
+
+            var minuscula = texto.ToLowerInvariant();
+            var resultado = new System.Text.StringBuilder(minuscula.Length);
+            foreach (var c in minuscula)
+                resultado.Append(mapa.TryGetValue(c, out var reemplazo) ? reemplazo : c);
+
+            return resultado.ToString();
         }
 
         // Conteo por catálogo dependiente (sin cargar los registros completos).

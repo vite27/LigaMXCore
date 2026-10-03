@@ -1,4 +1,58 @@
 $( document ).ready(function() {
+
+  // Inicializa un combo hijo en cascada que depende de un combo padre (ej.
+  // País -> Estado en Municipio, Temporada -> Jornada en JornadaPartido).
+  // Los ids de los combos son exclusivos de cada vista, así que un mismo
+  // handler delegado no afecta a otras páginas aunque ligaMxCore.js sea
+  // compartido por todo el sitio.
+  //
+  // Evita la condición de carrera de pedir el combo hijo dos veces seguido
+  // muy rápido (el usuario cambia de padre antes de que la primera llamada
+  // AJAX responda): cada petición lleva un número de secuencia local y solo
+  // la respuesta de la ÚLTIMA petición disparada se aplica al combo; una
+  // respuesta tardía de una petición anterior se descarta aunque llegue
+  // después (fue el bug encontrado al verificar la cascada de Municipio).
+  function initCascada(selectPadreId, selectHijoId, urlBase, textoTodos) {
+      var ultimaPeticion = 0;
+
+      $('#' + selectPadreId).on('change', function () {
+          var padreId = $(this).val() || 0;
+          var selectHijo = $('#' + selectHijoId);
+          var valorActual = selectHijo.val();
+          var peticionActual = ++ultimaPeticion;
+
+          $.ajax({
+              url: urlBase + padreId,
+              type: 'GET',
+              dataType: 'json',
+              success: function (items) {
+                  if (peticionActual !== ultimaPeticion) {
+                      return; // respuesta obsoleta de un cambio anterior, se descarta
+                  }
+
+                  selectHijo.empty();
+                  selectHijo.append($('<option></option>').val('').text(textoTodos));
+
+                  var sigueExistiendo = false;
+                  $.each(items, function (i, item) {
+                      if (String(item.id) === String(valorActual)) {
+                          sigueExistiendo = true;
+                      }
+                      selectHijo.append($('<option></option>').val(item.id).text(item.nombre));
+                  });
+
+                  selectHijo.val(sigueExistiendo ? valorActual : '');
+              },
+              error: function (xhr) {
+                  console.error('Error al cargar opciones de ' + selectHijoId + ': ', xhr.responseText);
+              }
+          });
+      });
+  }
+
+  initCascada('muniPaisId', 'muniEstadoId', '/Municipio/EstadosPorPais/', 'Todos los estados');
+  initCascada('jpTemporadaId', 'jpJornadaId', '/JornadaPartido/JornadasPorTemporada/', 'Todas las jornadas');
+
   $('#btnUpdateScores').click(function(event) {
         event.preventDefault(); // Detiene la navegación
         updateScores();
