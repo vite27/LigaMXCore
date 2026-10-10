@@ -78,7 +78,7 @@ invertir en su CRUD completo, vale la pena confirmar si se planea conectarlo a
 | **Estadio** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ *(duplicidad global de nombre; CP de 5 dígitos)* |
 | **Partido** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ *(equipo local ≠ visitante; sin pares local/visitante duplicados)* |
 | **Jornada** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ *(Orden único dentro de la misma Temporada)* |
-| **JornadaPartido** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ *(partido único en todo el fixture; equipo sin duplicarse en la misma jornada)* |
+| **JornadaPartido** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ *(partido único dentro de la misma temporada; equipo sin duplicarse en la misma jornada)* |
 
 Estado y Municipio se implementaron en paralelo con dos agentes independientes
 (cada uno en su propio git worktree), fusionados sin conflictos porque no
@@ -609,6 +609,201 @@ incluso con 0 resultados.
 
 Pendiente para una siguiente iteración: filtros de Estadio y Estatus de
 partido (ver fila de la tabla de arriba).
+
+### JornadaPartido/Index — rediseño del grid de captura (completado y verificado en runtime)
+
+Cambios pedidos por el usuario sobre "Partidos de la Jornada" (decisiones
+tomadas antes de implementar: exigir una sola jornada, Bootstrap Icons, estatus
+de solo lectura, logos de Wikipedia a 32 px):
+
+- **Se exige Temporada + Jornada** (reemplaza el diseño anterior donde "Todas
+  las jornadas" era válido). Sin las dos, no se consulta nada y se muestra una
+  alerta; una jornada que no pertenezca a la temporada elegida (query string
+  editado a mano) se trata igual. El nombre de la jornada va como `<h4>` sobre la
+  tabla en vez de una columna repetida. Alertas: `alert-info` antes de buscar,
+  `alert-warning` si falta Temporada/Jornada, `alert-warning` si la jornada no
+  tiene partidos.
+- **Columna Resultado oculta.** Hallazgo importante: `UpdateScores` **no
+  recalculaba `TipoResultadoId`** al capturar un marcador (solo guardaba goles
+  y estatus), así que el resultado quedaba desactualizado. Ahora el servidor lo
+  deriva siempre de los goles (Victoria Local / Victoria Visita / Empate) y el
+  cliente ya no lo envía. También rechaza goles nulos o negativos, y **ya no
+  toma `EstatusPartidoId` del cliente** (el estatus es de solo lectura en el
+  grid; cambiarlo desde ahí se revisará más adelante).
+- **Estatus como ícono** (Bootstrap Icons 1.11.3 instalado con LibMan en
+  `wwwroot/lib/bootstrap-icons`, enlazado en `_Layout.cshtml`): Pendiente =
+  reloj, En Curso = play, Finalizado = palomita, Pausado = pausa, cualquier
+  otro = interrogación. Cada ícono lleva `title` y `aria-label`. El mapa vive
+  en una función local de `Index.cshtml`.
+- **Logos de equipo (32×32).** `Scripts/gen_logos_equipos.py` lee el infobox de
+  cada club en **Wikipedia en inglés** (la imagen principal vía `pageimages` no
+  sirve: omite las imágenes no libres, que son la mayoría de los escudos y solo
+  devolvió 5 de 18), resuelve la miniatura con `imageinfo`, descarga a
+  `wwwroot/img/equipos/<slug>.png` (120 px de ancho, mostrados a 32×32 con
+  `object-fit: contain` vía la clase `.equipo-logo` de `site.css`, porque los
+  escudos tienen proporciones muy distintas) y genera
+  `Scripts/equipos_logos.sql` con `UPDATE Equipo SET EquipoLogo =
+  '/img/equipos/x.png'`. Aplicado con respaldo previo
+  (`liga.db.bak-20261009174021-preLogos`); los 18 equipos tienen logo. Los
+  escudos son marcas registradas, uso interno de la quiniela. `Equipo/Index` y
+  `Equipo/Details` ahora muestran la miniatura (en `Add`/`Edit` el campo sigue
+  siendo la ruta como texto; no hay subida de archivos).
+- **Botones.** "Detalles" oculto (la acción sigue existiendo). "Editar" oculto
+  hasta que haya roles: cuando existan, mostrarlo solo con
+  `User.IsInRole("Admin")`; **ocultar el botón no protege `/JornadaPartido/Edit/{id}`**
+  — falta `[Authorize(Roles="Admin")]` (pendiente #5 de CLAUDE.md). "Eliminar"
+  queda deshabilitado (con tooltip) si el estatus no es "Pendiente"; la regla se
+  repite en servidor en `Delete` GET (vista bloqueada, sin formulario) y en
+  `DeleteConfirmed` (rechaza el POST directo). Se compara por **nombre** de
+  estatus ("Pendiente"); si se renombra en el catálogo hay que actualizar
+  `EstaPendiente` en el controlador y la vista.
+- Se corrigió además un typo de clase CSS (`form-controldato-input`) en el
+  hidden de estatus.
+
+Verificado en runtime: sin parámetros / solo temporada / query vacío / jornada
+ajena a la temporada (alertas correctas, 0 filas); jornada 1 (9 filas, `<h4>`
+"Jornada 1", 18 logos, 9 íconos de palomita, sin columnas Jornada/Resultado, sin
+Detalles/Editar, 9 Eliminar deshabilitados); `Delete` GET y POST directo con
+token ajeno sobre un partido Finalizado bloqueados (la fila sigue existiendo);
+`UpdateScores` recalcula el resultado (3-1 → Victoria Local, 2-2 → Empate,
+restaurado 1-2 → Victoria Visita), rechaza goles negativos/nulos e ignora el
+estatus enviado por el cliente; camino permitido probado con una jornada y un
+partido de prueba (Pendiente: ícono reloj, Eliminar habilitado y borrado
+correcto; En Curso: ícono play, Eliminar deshabilitado y POST bloqueado), todo
+eliminado al final (`liga.db` quedó en 17 jornadas / 153 partidos).
+**Corrección de dato**: no existe una Temporada id=2 en `liga.db` (solo
+"Clausura 2026", cuyo campo Comentarios dice "60vo. torneo corto"); las
+menciones anteriores en este documento a una segunda temporada vacía eran
+incorrectas.
+
+Pendiente del módulo: conviene un vistazo humano al grid en ancho móvil (los
+logos, íconos y marcadores sí se revisaron con una captura de Edge headless).
+
+#### Regla: marcadores editables según el estatus de la jornada
+
+- Si el estatus de la **Jornada** (`EstatusJornada`) es **Pendiente, En Curso o
+  Pausada**, el marcador se captura en textboxes; en cualquier otro estatus
+  (ej. Finalizada) se muestra como `<span>` de solo lectura, con un aviso sobre la
+  tabla y el botón "Actualizar" **deshabilitado** (con tooltip, mismo criterio que
+  Eliminar). Decisiones del usuario: Pausada **sí** permite captura; comparación por
+  nombre de estatus.
+- La regla vive en `JornadaPartidoController.JornadaPermiteCaptura` y se **aplica
+  también en `UpdateScores`**: el lote completo se carga con el estatus de su
+  jornada en una sola consulta y se valida antes de modificar nada; si alguna fila
+  es de una jornada bloqueada se rechaza el lote entero (sin guardado parcial). El
+  JS solo envía filas que tengan textboxes y no hace POST si no hay ninguna.
+- **Datos:** se marcaron las jornadas 1–8 de Clausura 2026 como "Finalizada"
+  (los 153 partidos ya estaban en "Finalizado"; lo que estaba en "Pendiente" era el
+  estatus de las jornadas). Respaldo: `liga.db.bak-20261009183623-preJornadasFinalizadas`.
+  Las jornadas 9–17 siguen en Pendiente (editables). Ninguna lógica cierra jornadas
+  automáticamente todavía (pendiente #7 de CLAUDE.md).
+- Verificado en runtime: J1 Finalizada (0 textboxes, spans, aviso, Actualizar
+  deshabilitado, POST rechazado, marcador intacto); J9 en Pendiente / En Curso /
+  Pausada (textboxes, Actualizar habilitado, POST guardado) y en Finalizada (bloqueada,
+  POST rechazado); lote mixto con una fila de J1 rechazado completo sin tocar la
+  fila editable. J9 y su marcador se restauraron al terminar.
+
+#### Regla: Eliminar deshabilitado si la jornada o el partido están finalizados
+
+"Eliminar" solo está habilitado si el partido está **Pendiente** y la jornada **no** está
+Finalizada. Es la regla anterior (partido ≠ Pendiente) más la nueva (jornada Finalizada,
+que bloquea aunque el partido esté Pendiente). Vive en
+`JornadaPartidoController.MotivoBloqueoEliminar`, que devuelve el motivo y se usa en
+`Delete` GET (vista bloqueada, sin formulario) y en `DeleteConfirmed` (rechaza el POST
+directo); `Index.cshtml` repite el cálculo para deshabilitar el botón (tooltip según el
+motivo). Verificado: con la jornada 11 de Apertura temporalmente "Finalizada" y partidos
+Pendientes, los 9 botones quedaron deshabilitados, `Delete` GET y el POST directo se
+rechazaron y la fila siguió existiendo; restaurada a Pendiente volvieron a habilitarse. La
+jornada se restauró al terminar.
+
+#### Botón de estatus por partido (reemplaza los íconos)
+
+Decisiones del usuario: Finalizado = botón **negro** deshabilitado; el cierre automático
+de la jornada queda pendiente; refresco solo de la fila (opción B); Bootstrap Icons se
+conserva instalado aunque ya no se use (recomendar su limpieza al terminar el proyecto).
+
+- **UI:** Pendiente → "Iniciar" (`btn-info`, color de Detalles); En Curso → "Finalizar"
+  (`btn-danger`); Finalizado → "Finalizado" (`btn-dark btn-finalizado`, deshabilitado;
+  `site.css` fuerza `opacity: 1` porque Bootstrap atenúa los deshabilitados y se veía
+  gris); Pausado (y cualquier otro) → solo el texto, sin acción. Con la jornada
+  Finalizada los botones Iniciar/Finalizar salen deshabilitados.
+- **Servidor:** `POST /JornadaPartido/CambiarEstatus` (`[ValidateAntiForgeryToken]`, token
+  por cabecera `RequestVerificationToken`). Solo permite Pendiente→En Curso ("iniciar")
+  y En Curso→Finalizado ("finalizar"); rechaza (409/400) cualquier otra transición, un
+  Pausado, una acción inválida, goles negativos, y jornadas que no permiten captura.
+  Si la fila trae marcador (textboxes), lo guarda en el mismo paso y recalcula el
+  resultado (`CalcularTipoResultado`, compartido con `UpdateScores`); así no se
+  finaliza con un marcador escrito sin guardar. Responde con la fila renderizada.
+- **Vista parcial `_FilaPartido.cshtml`:** única fuente de verdad de la fila (la usan
+  `Index` y el endpoint). El JS (`.btn-estatus`, handler delegado) reemplaza solo esa fila,
+  valida los goles en cliente y bloquea la fila mientras responde (evita doble clic que
+  avance dos estados); no se pierden marcadores sin guardar de otras filas.
+- `UpdateScores` ya no recibe ni usa el estatus (se quitó `EstatusPartidoId` del
+  payload y el hidden); se eliminó la clase `.estatus-icono` y el mapa de íconos.
+- **Verificado (jornada 11 de Apertura, restaurada idéntica al terminar):** Index con 9
+  "Iniciar", sin íconos; iniciar → fila con "Finalizar" y Eliminar deshabilitado; iniciar
+  otra vez → 409; finalizar con 2-1 → Finalizado, goles 2-1, resultado Victoria Local;
+  finalizar sin iniciar → 409; goles negativos y acción inválida → 400; sin token → 400;
+  Pausado → 409 y se muestra solo el texto; jornada Finalizada → 409 y botones
+  deshabilitados; captura de pantalla con los colores (tras corregir el gris del negro).
+- No hay roles todavía: cualquier usuario puede iniciar/finalizar; cuando existan, la
+  restricción (¿solo admin?) se decide aparte.
+
+#### Mejora posible (transversal): no evaluar reglas por NOMBRE de catálogo
+
+Varias reglas hoy comparan por el texto de un catálogo: "Pendiente" (partido) en
+`EstaPendiente`/`Index.cshtml`, los estatus de jornada con captura
+(`JornadaPermiteCaptura`), los tipos de resultado "Victoria Local/Visita/Empate" en
+`UpdateScores`/`Add`, y el estatus "Pendiente"/"Empate" por defecto en `Add`. Si
+alguien renombra un registro del catálogo (son editables desde la UI) la regla se
+rompe sin error visible. Alternativa más robusta, aplicable a todos esos catálogos:
+una clave estable (columna `Codigo`, o un booleano de comportamiento como
+`PermiteCaptura`/`EsInicial`) que la lógica use en lugar del nombre; implica cambio
+de esquema por SQL directo con respaldo previo. Se decidió **posponerlo** y
+mantener la comparación por nombre por ahora.
+
+### Carga de datos reales — Apertura 2026 (2026-10-09)
+
+Pedido: marcar todo lo existente como finalizado y cargar la temporada Apertura 2026
+con su calendario.
+
+- **Clausura 2026:** las 17 jornadas pasaron a "Finalizada" (los 153 partidos ya
+  estaban "Finalizado"). Respaldo: `liga.db.bak-20261009185136-preApertura2026`.
+- **Fuente:** artículo "Torneo Apertura 2026 (México)" de Wikipedia, sección "Torneo
+  regular" (API de MediaWiki; no existe aún un "Anexo ... Fase regular" como el de
+  Clausura). `Scripts/gen_apertura2026.py` (datos hardcoded, valida 18 equipos × 17
+  partidos, sin pares repetidos, sin equipo doble por jornada, estadios resueltos)
+  genera `Scripts/apertura2026.sql`; los ids de registros nuevos se resuelven con
+  subconsultas dentro del SQL.
+- **Contenido:** temporada "Apertura 2026" (Comentarios "61er torneo corto"), 17
+  `Jornada`, 153 `JornadaPartido`. Partido jugado: marcador real, "Finalizado",
+  resultado calculado. No jugado: 0-0, "Pendiente", "Empate" (decisión de producto
+  existente). Jornada "Finalizada" si todos sus partidos están jugados: 1–6 y 8–10; la
+  7 (2 partidos aplazados) y 11–17 quedan "Pendiente", por lo que sus marcadores son
+  editables. Resultado: 88 jugados / 65 pendientes.
+- **Atlante (equipo nuevo):** el Apertura 2026 incluye a Atlante (de regreso a Liga MX)
+  en lugar de Mazatlán FC. Se creó `Equipo` Atlante (alias "Los Potros de Hierro",
+  municipio Ciudad de México, comparte el Estadio Banorte con América) y sus 36
+  `Partido` (local y visita contra los otros 18 equipos del catálogo; el catálogo
+  pasó de 306 a 342). Logo agregado con `gen_logos_equipos.py` ("Atlante F.C.").
+  Mazatlán FC se conserva (tiene su historial en Clausura).
+- **Regla cambiada — "Partido único" ahora es por temporada:** 61 de los pares
+  local/visita del Apertura ya estaban programados en Clausura y la regla global los
+  habría bloqueado. `ValidarPartidoYaProgramado` ahora recibe la jornada y compara
+  dentro de su temporada; en `Add` el combo de `Partido` lista todos (aún no hay
+  jornada elegida) y la validación del POST rechaza el repetido; en `Edit` el combo
+  excluye los ya usados en esa temporada.
+- **Dato a revisar:** J3 América–Santos Laguna venía con la celda de estadio
+  desplazada en la fuente ("2 de agosto"); se resolvió a Estadio Banorte por la URL del
+  informe arbitral. J11 aparece como "vs." (siguiente por jugarse). Para actualizar
+  resultados nuevos hay que editar `PARTIDOS` del generador o capturarlos en el grid
+  (jornadas Pendiente/En Curso/Pausada son editables).
+- **Verificado en runtime:** cascada Temporada→Jornada con 17 jornadas para la nueva
+  temporada; J1 (Finalizada: spans, aviso), J7 (9 filas editables, 7 con palomita y 2
+  con reloj), J11 (9 con reloj); logo de Atlante 200; `Equipo/Index` con 19 logos;
+  Clausura J1 intacta; FK sin violaciones; Add duplicado dentro de la temporada
+  rechazado; re-alta de un par compartido con Clausura permitida; `UpdateScores` en J7
+  guarda y recalcula (revertido). Conteos finales: 34 jornadas, 306 `JornadaPartido`.
 
 ### JornadaPartido — notas de diseño originales (referencia histórica, ya resueltas arriba)
 

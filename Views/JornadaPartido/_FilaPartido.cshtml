@@ -1,0 +1,104 @@
+@model LigaMXCore.Models.JornadaPartido
+
+@* Fila del grid de Partidos de la Jornada. La usa Index (una por partido) y el endpoint
+   CambiarEstatus, que devuelve solo esta fila para refrescarla sin recargar la página.
+   Espera en ViewData: MarcadoresEditables y EstatusJornadaNombre. *@
+@{
+    var marcadoresEditables = (bool?)ViewData["MarcadoresEditables"] == true;
+    var jornadaFinalizada = string.Equals((ViewData["EstatusJornadaNombre"] as string)?.Trim(), "Finalizada", StringComparison.OrdinalIgnoreCase);
+
+    var estatus = Model.EstatusPartido.EstatusPartidoNombre?.Trim() ?? "";
+    var esPendiente = string.Equals(estatus, "Pendiente", StringComparison.OrdinalIgnoreCase);
+    var esEnCurso = string.Equals(estatus, "En Curso", StringComparison.OrdinalIgnoreCase);
+    var esFinalizado = string.Equals(estatus, "Finalizado", StringComparison.OrdinalIgnoreCase);
+
+    // Eliminar solo si el partido está Pendiente Y la jornada no está Finalizada (regla
+    // repetida en el controlador: MotivoBloqueoEliminar).
+    var puedeEliminar = esPendiente && !jornadaFinalizada;
+}
+<tr data-id="@Model.JornadaPartidoId" class="match_score">
+    <td>
+        <input type="hidden" class="form-control dato-input" name="JornadaId" value="@Model.JornadaId" />
+        <input type="hidden" class="form-control dato-input" name="EstadioId" value="@Model.EstadioId" />
+        @Model.Estadio.EstadioNombre
+    </td>
+    <td>
+        <input type="hidden" class="form-control dato-input" name="PartidoId" value="@Model.PartidoId" />
+        @if (!string.IsNullOrEmpty(Model.Partido.EquipoLocal.EquipoLogo))
+        {
+            <img src="@Model.Partido.EquipoLocal.EquipoLogo" alt="" class="equipo-logo" />
+        }
+        else
+        {
+            <span class="equipo-logo equipo-logo-vacio"></span>
+        }
+        @Model.Partido.EquipoLocal.EquipoNombre
+    </td>
+    <td>
+        <div class="d-flex align-items-center gap-1">
+            @if (marcadoresEditables)
+            {
+                <input type="text" name="golLocal" class="form-control dato-input" style="width: 40px;" value="@(Model.GolLocal ?? 0)" />
+                <span> - </span>
+                <input type="text" name="golVisita" class="form-control dato-input" style="width: 40px;" value="@(Model.GolVisita ?? 0)" />
+            }
+            else
+            {
+                <span class="fw-semibold">@(Model.GolLocal ?? 0)</span>
+                <span> - </span>
+                <span class="fw-semibold">@(Model.GolVisita ?? 0)</span>
+            }
+        </div>
+    </td>
+    <td>
+        @if (!string.IsNullOrEmpty(Model.Partido.EquipoVisita.EquipoLogo))
+        {
+            <img src="@Model.Partido.EquipoVisita.EquipoLogo" alt="" class="equipo-logo" />
+        }
+        else
+        {
+            <span class="equipo-logo equipo-logo-vacio"></span>
+        }
+        @Model.Partido.EquipoVisita.EquipoNombre
+    </td>
+    <td class="text-center">
+        @* Botón de estatus: Pendiente -> Iniciar (En Curso); En Curso -> Finalizar (Finalizado);
+           Finalizado -> botón negro deshabilitado; Pausado (y cualquier otro) se ignora por ahora.
+           Con la jornada Finalizada no se puede cambiar el estatus de sus partidos. *@
+        @if (esPendiente)
+        {
+            <span class="d-inline-block" title="@(jornadaFinalizada ? "La jornada está Finalizada" : "Marcar el partido como En Curso")">
+                <button type="button" class="btn btn-sm btn-info btn-estatus" data-accion="iniciar" disabled="@jornadaFinalizada">Iniciar</button>
+            </span>
+        }
+        else if (esEnCurso)
+        {
+            <span class="d-inline-block" title="@(jornadaFinalizada ? "La jornada está Finalizada" : "Guardar el marcador y marcar el partido como Finalizado")">
+                <button type="button" class="btn btn-sm btn-danger btn-estatus" data-accion="finalizar" disabled="@jornadaFinalizada">Finalizar</button>
+            </span>
+        }
+        else if (esFinalizado)
+        {
+            <button type="button" class="btn btn-sm btn-dark btn-finalizado" disabled>Finalizado</button>
+        }
+        else
+        {
+            <span class="text-muted small">@estatus</span>
+        }
+    </td>
+    <td>
+        @* "Detalles" oculto a petición del usuario (la acción y su vista siguen existiendo).
+           "Editar" oculto hasta que existan usuarios con rol admin (ver "Flujos pendientes"
+           en CLAUDE.md): entonces se mostrará solo con User.IsInRole("Admin"). *@
+        @if (puedeEliminar)
+        {
+            <a asp-action="Delete" asp-route-id="@Model.JornadaPartidoId" class="btn btn-sm btn-danger">Eliminar</a>
+        }
+        else
+        {
+            <span title="@(jornadaFinalizada ? "No se puede eliminar: la jornada está Finalizada" : "Solo se pueden eliminar partidos con estatus Pendiente")" class="d-inline-block">
+                <button type="button" class="btn btn-sm btn-danger" disabled>Eliminar</button>
+            </span>
+        }
+    </td>
+</tr>

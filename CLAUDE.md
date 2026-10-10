@@ -44,8 +44,10 @@ Migrations/    1 migración inicial ("InitialForSqlite") — solo cubre identity
 Views/         Vistas Razor paralelas a cada controlador
 Pages/Shared/  _Layout.cshtml (compartido por todas las vistas MVC e Identity UI)
 wwwroot/       Bootstrap, jQuery, ligaMxCore.js
-Scripts/       Scripts de carga de datos para liga.db (ej. `gen_jornadapartido.py` +
-               el .sql que genera, con los 153 partidos reales del Clausura 2026).
+Scripts/       Scripts de carga de datos para liga.db (ej. `gen_logos_equipos.py`, que
+               además descarga los logos a `wwwroot/img/equipos/`, y `gen_jornadapartido.py` +
+               el .sql que genera, con los 153 partidos reales del Clausura 2026, y
+               `gen_apertura2026.py` para el Apertura 2026).
                Convención para futuras cargas de datos de negocio: generador en
                Python que resuelve ids reales contra liga.db (solo lectura) y
                escribe un .sql con INSERTs, nunca escribe la DB directamente.
@@ -84,7 +86,8 @@ PLAN.md        Plan de completitud CRUD por catálogo — fuente de verdad de qu
     `TemporadaId`.
   - `JornadaPartido` (la tabla de fixture) se puebla por selección manual vía
     dropdowns (no generación automática) y valida que un `Partido` solo se use una
-    vez en todo el fixture y que un equipo no tenga dos partidos en la misma
+    vez **dentro de la misma Temporada** (el mismo par local/visitante sí se repite
+    entre temporadas) y que un equipo no tenga dos partidos en la misma
     `Jornada`. Un partido no jugado se crea con `GolLocal=0`/`GolVisita=0`/
     `TipoResultadoId`="Empate" (decisión de producto, sin cambio de esquema). El
     marcador real se sigue capturando solo vía `UpdateScores` (grid de `Index`),
@@ -94,6 +97,13 @@ PLAN.md        Plan de completitud CRUD por catálogo — fuente de verdad de qu
     sobrescribiría con sus valores CLR por defecto. Carga la entidad con
     `FindAsync` y modifica solo los campos del formulario (mismo patrón que
     `UpdateScores`).
+  - **Temporada Apertura 2026 cargada** (id 2): 17 jornadas × 9 partidos desde
+    Wikipedia, con los resultados jugados a 2026-10-09 (88 partidos "Finalizado";
+    65 "Pendiente" 0-0: J7 con 2 aplazados y J11–J17). Incluye el equipo nuevo
+    **Atlante** (reemplaza a Mazatlán FC en el torneo; Mazatlán sigue en el catálogo)
+    y sus 36 `Partido`. Generador `Scripts/gen_apertura2026.py` → `apertura2026.sql`.
+    Las 17 jornadas de Clausura 2026 están "Finalizada"; en Apertura lo están las
+    jornadas 1–6 y 8–10, y 7 y 11–17 siguen "Pendiente" (editables). Ver `PLAN.md`.
   - `JornadaPartido` tiene datos reales cargados: las 153 filas de la fase
     regular completa del Clausura 2026 (17 jornadas × 9 partidos, resultados
     y estadios reales, `EstatusPartidoId`="Finalizado"). Cargados vía
@@ -134,12 +144,13 @@ volumen (Fase A)".
   "Buscar"** (su `Index` es también el grid editable de captura de
   marcadores `UpdateScores`, así que cargar todo el historial de temporadas
   por defecto renderizaría cientos de inputs editables sin que se pida).
-  "Buscar" sin elegir Temporada tampoco devuelve nada. Para distinguir "nunca
-  se buscó" (sin alerta, solo un mensaje de ayuda) de "se buscó y no hay
-  resultados" (alerta), se usa `Request.QueryString.HasValue` en el
-  controlador — el modelo vacío por sí solo no alcanza para diferenciar los
-  dos casos. Pendiente para una siguiente iteración: filtros de Estadio y
-  Estatus de partido.
+  **Se exige Temporada Y Jornada** (una sola jornada a la vez, sin opción
+  "Todas"): sin las dos, o con una jornada que no pertenece a la temporada,
+  no devuelve nada y avisa. Para distinguir "nunca se buscó" (alerta info) de
+  "se buscó y falta algo / no hay resultados" (alerta warning), se usa
+  `Request.QueryString.HasValue` en el controlador. El nombre de la jornada
+  se muestra como `<h4>` sobre la tabla, no como columna. Pendiente para una
+  siguiente iteración: filtros de Estadio y Estatus de partido.
 
 **Patrón de cascada (Municipio País→Estado, JornadaPartido Temporada→Jornada)**,
 ya usado dos veces y con el mismo criterio para cualquier cascada futura:
@@ -213,6 +224,27 @@ texto en Estado, aplicables a cualquier filtro de texto futuro:**
 - **Equipo**: `Index` solo muestra Nombre y Logo (Alias/Municipio solo en `Details`).
 - **Jornada**: `Index` solo muestra Temporada y Jornada (Orden/Estatus solo en
   `Details`).
+- **JornadaPartido**: `Index` muestra Estadio, Local, Marcador, Visita, Estatus y
+  Acciones — **sin** columna Jornada (va como `<h4>`) ni Resultado (no editable,
+  alimentará el cálculo de puntos; el servidor lo deriva de los goles en
+  `UpdateScores`, nunca del cliente). Local/Visita llevan el logo del equipo
+  (`Equipo.EquipoLogo`, ruta bajo `wwwroot/img/equipos/`, clase `.equipo-logo` de
+  32×32). El estatus es un **botón** (no ícono): Pendiente → "Iniciar" (celeste, pasa a En
+  Curso), En Curso → "Finalizar" (rojo, guarda el marcador de la fila y pasa a
+  Finalizado), Finalizado → botón negro deshabilitado; Pausado se ignora por ahora.
+  Endpoint `POST /JornadaPartido/CambiarEstatus` (antiforgery por cabecera; valida
+  transiciones y que la jornada permita captura) que devuelve la fila renderizada
+  (`_FilaPartido.cshtml`, compartida con `Index`) para reemplazar solo esa fila por JS.
+  **Bootstrap Icons sigue instalado (LibMan) pero sin uso** — ver "Limpieza pendiente". Botones:
+  El marcador es editable (textboxes) solo si la **jornada** está Pendiente, En Curso
+  o Pausada; en otro estatus (ej. Finalizada) son spans, con aviso y "Actualizar"
+  deshabilitado — regla en `JornadaPermiteCaptura`, repetida en `UpdateScores`
+  (rechaza el lote completo). Botones: "Detalles" oculto; "Editar" oculto hasta que existan roles (después, solo
+  `User.IsInRole("Admin")` + `[Authorize(Roles="Admin")]` en la acción, porque
+  ocultar el botón no protege la URL); "Eliminar" deshabilitado si la **jornada** está
+  "Finalizada" o si el estatus del **partido** no es "Pendiente" (regla en
+  `MotivoBloqueoEliminar`, repetida en `Delete` GET/POST del controlador; compara por
+  nombre de estatus).
 - **Partido**: `Index` solo muestra el botón "Eliminar" (a petición del usuario,
   "Detalles"/"Editar" no son relevantes para este catálogo por ahora). Las acciones
   `Details`/`Edit` siguen existiendo en el controlador y sus vistas, solo no hay
@@ -249,6 +281,18 @@ Paleta "fría" minimalista para el navbar en `wwwroot/css/site.css` (único arch
 CSS propio del proyecto, mismo criterio que `ligaMxCore.js` para JS): fondo slate
 oscuro (`#22313f`), acento azul (`#5dade2`), sin sombras ni gradientes.
 
+**Deuda conocida — reglas por nombre de catálogo**: varias reglas comparan por el
+nombre de un registro de catálogo ("Pendiente", estatus de jornada con captura,
+"Victoria Local/Visita/Empate"), frágil si se renombra desde la UI. Mejora posible
+para todos esos catálogos: una clave estable (código o booleano de comportamiento).
+Detalle en `PLAN.md`.
+
+**Limpieza pendiente al finalizar el proyecto**: recomendar al usuario retirar las
+librerías en desuso. Hoy: Bootstrap Icons (`wwwroot/lib/bootstrap-icons`, entrada en
+`libman.json` y `<link>` en `_Layout.cshtml`; se conservó a petición por si se
+necesita), `Microsoft.EntityFrameworkCore.SqlServer` del `.csproj` y los respaldos
+`liga.db.bak-*`. Revisar también `Usuario`/`Scripts/` generados que ya no se usen.
+
 ## Flujos pendientes (lo más importante a considerar en cualquier tarea)
 
 1. **Captura de pronósticos del participante** — no existe controlador/vista para
@@ -260,7 +304,8 @@ oscuro (`#22313f`), acento azul (`#5dade2`), sin sombras ni gradientes.
 5. **Autorización** — ningún controlador tiene `[Authorize]`; todo es público.
 6. **Delete/Details** faltan en `Usuario` (catálogo legacy, pendiente decisión —
    ver PLAN.md Fase 1).
-7. Sin lógica de cierre automático de `EstatusJornada` (el campo ya existe en
+7. Sin lógica de cierre automático de `EstatusJornada` (decisión del usuario: queda
+   pendiente; el flujo Iniciar/Finalizar de partidos NO cambia el estatus de la jornada) (el campo ya existe en
    `Jornada`, pero nada lo actualiza automáticamente).
 
 ## Notas / inconsistencias conocidas

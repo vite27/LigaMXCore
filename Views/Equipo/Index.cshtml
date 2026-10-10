@@ -23,7 +23,12 @@
 {
         <tr>
             <td>@item.EquipoNombre</td>
-            <td>@item.EquipoLogo</td>
+            <td>
+                @if (!string.IsNullOrEmpty(item.EquipoLogo))
+                {
+                    <img src="@item.EquipoLogo" alt="Logo de @item.EquipoNombre" class="equipo-logo" />
+                }
+            </td>
             <td>
                 <a asp-action="Details" asp-route-id="@item.EquipoId" class="btn btn-sm btn-info">Detalles</a>
                 <a asp-action="Edit" asp-route-id="@item.EquipoId" class="btn btn-sm btn-primary">Editar</a>

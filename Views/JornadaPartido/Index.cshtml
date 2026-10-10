@@ -3,8 +3,15 @@
 @{
     ViewData["Title"] = "Partidos de la Jornada";
     Layout = "_Layout";
+
+    var jornadaNombre = ViewData["JornadaNombre"] as string;
+
+    // Los marcadores solo son editables si el estatus de la jornada lo permite
+    // (regla definida en JornadaPartidoController.JornadaPermiteCaptura).
+    var marcadoresEditables = (bool?)ViewData["MarcadoresEditables"] == true;
 }
 
+@Html.AntiForgeryToken()
 <h1>Partidos de la Jornada</h1>
 <p>
     <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
@@ -20,7 +27,7 @@
     <div class="col-auto">
         <label for="jpJornadaId" class="form-label">Jornada</label>
         <select name="jornadaId" id="jpJornadaId" class="form-select" asp-items="ViewBag.JornadaId">
-            <option value="">Todas las jornadas</option>
+            <option value="">Selecciona una jornada</option>
         </select>
     </div>
     <div class="col-auto">
@@ -29,66 +36,43 @@
     </div>
 </form>
 
-@if ((bool?)ViewData["BusquedaRealizada"] == true && !Model.Any())
+@if ((bool?)ViewData["FaltaJornada"] == true)
 {
-    <div class="alert alert-warning">No se encontraron partidos para los filtros seleccionados.</div>
+    <div class="alert alert-warning">Selecciona una Temporada y una Jornada para ver sus partidos.</div>
+}
+else if ((bool?)ViewData["BusquedaRealizada"] == true && !Model.Any())
+{
+    <div class="alert alert-warning">No se encontraron partidos en la jornada seleccionada.</div>
 }
 else if ((bool?)ViewData["BusquedaRealizada"] != true)
 {
-    <div class="alert alert-info">Selecciona una Temporada y presiona "Buscar" para ver el fixture.</div>
+    <div class="alert alert-info">Selecciona una Temporada y una Jornada, y presiona "Buscar" para ver el fixture.</div>
 }
 
 @if (Model.Any())
 {
-<table class="table table-striped">
+<h4 class="mb-3">@jornadaNombre</h4>
+@if (!marcadoresEditables)
+{
+    <div class="alert alert-secondary py-2">
+        Jornada con estatus "@ViewData["EstatusJornadaNombre"]": los marcadores son de solo lectura.
+    </div>
+}
+<table class="table table-striped align-middle">
     <thead>
         <tr>
-            <th>Jornada</th>
             <th>Estadio</th>
             <th>Local</th>
             <th>Marcador</th>
             <th>Visita</th>
-            <th>Estatus</th>
-            <th>Resultado</th>
+            <th></th>
             <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
 @foreach (LigaMXCore.Models.JornadaPartido item in Model)
 {
-    <tr data-id="@item.JornadaPartidoId" class="match_score">
-        <td>
-            <input type="hidden" class="dato-input" name="JornadaId" value="@item.JornadaId" />
-            @item.Jornada.JornadaNombre
-        </td>
-        <td>
-            <input type="hidden" class="form-control dato-input" name="EstadioId" value="@item.EstadioId" />
-            @item.Estadio.EstadioNombre
-        </td>
-        <td>
-            <input type="hidden" class="form-control dato-input" name="PartidoId" value="@item.PartidoId" />
-            @item.Partido.EquipoLocal.EquipoNombre
-        </td>
-        <td>
-           <input type="text" name="golLocal" class="form-control dato-input" style="display:block; width: 40px;" value="@(item.GolLocal ?? 0)" />
-           <label class="control-label"> - </label>
-           <input type="text" name="golVisita" class="form-control dato-input" style="display:block; width: 40px;" value="@(item.GolVisita ?? 0)" />
-       </td>
-       <td>@item.Partido.EquipoVisita.EquipoNombre</td>
-       <td>
-           <input type="hidden" class="form-controldato-input" name="EstatusPartidoId" value="@item.EstatusPartidoId" />
-           @item.EstatusPartido.EstatusPartidoNombre
-       </td>
-       <td>
-           <input type="hidden" class="form-control dato-input" name="TipoResultadoId" value="@item.TipoResultadoId" />
-           @item.TipoResultado.TipoResultadoNombre
-        </td>
-        <td>
-           <a asp-action="Details" asp-route-id="@item.JornadaPartidoId" class="btn btn-sm btn-info">Detalles</a>
-           <a asp-action="Edit" asp-route-id="@item.JornadaPartidoId" class="btn btn-sm btn-primary">Editar</a>
-           <a asp-action="Delete" asp-route-id="@item.JornadaPartidoId" class="btn btn-sm btn-danger">Eliminar</a>
-        </td>
-    </tr>
+    <partial name="_FilaPartido" model="item" />
 }
     </tbody>
 </table>
@@ -98,6 +82,15 @@ else if ((bool?)ViewData["BusquedaRealizada"] != true)
         <a asp-action="Add" class="btn btn-sm btn-primary">Nuevo</a>
     </td>
      <td>
-        <a asp-action="Update" class="btn btn-sm btn-primary" id="btnUpdateScores">Actualizar</a>
+        @if (marcadoresEditables)
+        {
+            <a asp-action="Update" class="btn btn-sm btn-primary" id="btnUpdateScores">Actualizar</a>
+        }
+        else
+        {
+            <span title="Los marcadores de esta jornada son de solo lectura" class="d-inline-block">
+                <button type="button" class="btn btn-sm btn-primary" disabled>Actualizar</button>
+            </span>
+        }
     </td>
 </table>

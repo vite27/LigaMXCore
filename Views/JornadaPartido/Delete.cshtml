@@ -41,7 +41,14 @@
     </tbody>
 </table>
 
-@if (totalDependencias > 0)
+@if (ViewData["MotivoBloqueoEstatus"] is string motivoBloqueo)
+{
+    <div class="alert alert-danger">
+        No se puede eliminar: @motivoBloqueo
+    </div>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+}
+else if (totalDependencias > 0)
 {
     <div class="alert alert-danger">
         No se puede eliminar: existen registros dependientes en los catálogos listados arriba.

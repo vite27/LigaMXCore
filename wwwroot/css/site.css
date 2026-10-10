@@ -47,3 +47,24 @@
 .app-navbar .dropdown-divider {
     border-color: rgba(255, 255, 255, 0.1);
 }
+
+/* Logo de equipo en listados: caja fija de 32x32 sin deformar el escudo
+   (los escudos tienen proporciones distintas; las imágenes viven en
+   wwwroot/img/equipos y su ruta está en Equipo.EquipoLogo). */
+.equipo-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 0.4rem;
+}
+
+.equipo-logo-vacio {
+    display: inline-block;
+}
+
+/* Partido Finalizado: botón negro deshabilitado. Bootstrap atenúa (opacity) los botones
+   deshabilitados y el negro se veía gris, así que aquí se mantiene a opacidad completa. */
+.btn-finalizado:disabled {
+    opacity: 1;
+}

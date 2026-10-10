@@ -51,7 +51,57 @@ $( document ).ready(function() {
   }
 
   initCascada('muniPaisId', 'muniEstadoId', '/Municipio/EstadosPorPais/', 'Todos los estados');
-  initCascada('jpTemporadaId', 'jpJornadaId', '/JornadaPartido/JornadasPorTemporada/', 'Todas las jornadas');
+  initCascada('jpTemporadaId', 'jpJornadaId', '/JornadaPartido/JornadasPorTemporada/', 'Selecciona una jornada');
+
+  // Botón de estatus de cada fila (Iniciar / Finalizar): pide el cambio al servidor y, si
+  // se acepta, reemplaza SOLO esa fila por la que devuelve el servidor (así no se pierden los
+  // marcadores sin guardar de las demás filas). Si la fila tiene textboxes, manda su marcador
+  // para que se guarde junto con el cambio de estatus. Mientras responde, la fila queda
+  // bloqueada para evitar dobles clics que avancen dos estados.
+  $(document).on('click', '.btn-estatus', function () {
+      var boton = $(this);
+      var fila = boton.closest('tr.match_score');
+      if (fila.data('ocupada')) {
+          return;
+      }
+
+      var golLocal = fila.find('input[name="golLocal"]');
+      var golVisita = fila.find('input[name="golVisita"]');
+      var datos = {
+          JornadaPartidoId: parseInt(fila.data('id')),
+          Accion: boton.data('accion'),
+          GolLocal: null,
+          GolVisita: null
+      };
+      if (golLocal.length && golVisita.length) {
+          if (!/^\d+$/.test($.trim(golLocal.val())) || !/^\d+$/.test($.trim(golVisita.val()))) {
+              alert('Los goles deben ser números enteros mayores o iguales a 0.');
+              return;
+          }
+          datos.GolLocal = parseInt(golLocal.val());
+          datos.GolVisita = parseInt(golVisita.val());
+      }
+
+      fila.data('ocupada', true);
+      boton.prop('disabled', true);
+
+      $.ajax({
+          url: '/JornadaPartido/CambiarEstatus',
+          type: 'POST',
+          data: JSON.stringify(datos),
+          contentType: 'application/json; charset=utf-8',
+          dataType: 'html',
+          headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').first().val() },
+          success: function (html) {
+              fila.replaceWith($.trim(html));
+          },
+          error: function (xhr) {
+              fila.data('ocupada', false);
+              boton.prop('disabled', false);
+              alert(xhr.responseText || 'No se pudo cambiar el estatus del partido.');
+          }
+      });
+  });
 
   $('#btnUpdateScores').click(function(event) {
         event.preventDefault(); // Detiene la navegación
@@ -62,7 +112,9 @@ $( document ).ready(function() {
 
   function updateScores() {
         var scores = [];
-        $('.match_score').each(function() {
+        // Solo las filas con textboxes de marcador (en jornadas de solo lectura la
+        // vista renderiza spans, no hay nada que enviar).
+        $('.match_score').has('input[name="golLocal"]').each(function() {
             var match = $(this);
             var scoreData = {
                 JornadaPartidoId: parseInt(match.data('id')),
@@ -70,13 +122,17 @@ $( document ).ready(function() {
                 EstadioId: parseInt(match.find('input[name="EstadioId"]').val()),
                 PartidoId: parseInt(match.find('input[name="PartidoId"]').val()),
                 GolLocal: parseInt(match.find('input[name="golLocal"]').val()),
-                GolVisita: parseInt(match.find('input[name="golVisita"]').val()),
-                EstatusPartidoId: parseInt(match.find('input[name="EstatusPartidoId"]').val()),
-                TipoResultadoId: parseInt(match.find('input[name="TipoResultadoId"]').val())
+                GolVisita: parseInt(match.find('input[name="golVisita"]').val())
+                // TipoResultadoId y EstatusPartidoId ya no se envían: el servidor calcula el
+                // resultado a partir de los goles y el estatus solo cambia con CambiarEstatus.
             };
             scores.push(scoreData);
         });
         
+        if (scores.length === 0) {
+            return;
+        }
+
         $.ajax({
             // Usa la ruta absoluta con un "/" al inicio o el Helper de MVC
             url: '/JornadaPartido/UpdateScores', 
