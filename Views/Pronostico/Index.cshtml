@@ -1,0 +1,184 @@
+@model LigaMXCore.Controllers.PronosticoGridViewModel
+
+@{
+    ViewData["Title"] = "Pronósticos de la Jornada";
+    Layout = "_Layout";
+
+    var temporadaId = ViewData["TemporadaId_Sel"];
+    var jornadaId = ViewData["JornadaId_Sel"];
+    var participanteId = ViewData["ParticipanteId_Sel"];
+    var hayGrid = Model.Filas.Any();
+    var hayEditables = Model.Filas.Any(f => f.Editable);
+    var hayPronosticos = Model.Filas.Any(f => f.Detalle != null && f.Editable);
+    var indice = 0;
+}
+
+<h1>Pronósticos de la Jornada</h1>
+<p>
+    <a asp-action="Index" asp-controller="Home">Volver al inicio</a>
+</p>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success">@TempData["Mensaje"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form method="get" asp-action="Index" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <label for="prTemporadaId" class="form-label">Temporada</label>
+        <select name="temporadaId" id="prTemporadaId" class="form-select" asp-items="ViewBag.TemporadaId">
+            <option value="">Selecciona una temporada</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label for="prJornadaId" class="form-label">Jornada</label>
+        <select name="jornadaId" id="prJornadaId" class="form-select" asp-items="ViewBag.JornadaId">
+            <option value="">Selecciona una jornada</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label for="prParticipanteId" class="form-label">Participante</label>
+        <select name="participanteId" id="prParticipanteId" class="form-select" asp-items="ViewBag.ParticipanteId">
+            <option value="">Selecciona un participante</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Buscar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Limpiar filtros</a>
+    </div>
+</form>
+
+@if ((bool?)ViewData["FaltaSeleccion"] == true)
+{
+    <div class="alert alert-warning">Selecciona una Temporada, una Jornada y un Participante para ver sus pronósticos.</div>
+}
+else if ((bool?)ViewData["BusquedaRealizada"] == true && !hayGrid)
+{
+    <div class="alert alert-warning">La jornada seleccionada no tiene partidos programados.</div>
+}
+else if ((bool?)ViewData["BusquedaRealizada"] != true)
+{
+    <div class="alert alert-info">Selecciona una Temporada, una Jornada y un Participante, y presiona "Buscar".</div>
+}
+
+@if (hayGrid)
+{
+    <h4 class="mb-1">@Model.JornadaNombre</h4>
+    <p class="text-muted">Pronósticos de <strong>@Model.ParticipanteNombre</strong></p>
+
+    @if (!hayEditables)
+    {
+        <div class="alert alert-secondary py-2">
+            Ningún partido de esta jornada está Pendiente: los pronósticos son de solo lectura.
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-secondary py-2">
+            Solo se pueden capturar, modificar o limpiar los pronósticos de partidos Pendientes.
+            Deja ambos goles vacíos para no pronosticar un partido.
+        </div>
+    }
+
+    <form method="post" asp-action="Guardar" id="frmPronosticos">
+        <input type="hidden" name="temporadaId" value="@temporadaId" />
+        <input type="hidden" name="jornadaId" value="@jornadaId" />
+        <input type="hidden" name="participanteId" value="@participanteId" />
+
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Local</th>
+                    <th>Pronóstico</th>
+                    <th>Visita</th>
+                    <th>Marcador real</th>
+                    <th>Estatus</th>
+                    <th>Puntos</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var fila in Model.Filas)
+            {
+                var jp = fila.Partido;
+                var det = fila.Detalle;
+                <tr>
+                    <td>
+                        @if (!string.IsNullOrEmpty(jp.Partido.EquipoLocal.EquipoLogo))
+                        {
+                            <img src="@jp.Partido.EquipoLocal.EquipoLogo" alt="" class="equipo-logo" />
+                        }
+                        else
+                        {
+                            <span class="equipo-logo equipo-logo-vacio"></span>
+                        }
+                        @jp.Partido.EquipoLocal.EquipoNombre
+                    </td>
+                    <td>
+                        @if (fila.Editable)
+                        {
+                            <input type="hidden" name="filas[@indice].JornadaPartidoId" value="@jp.JornadaPartidoId" />
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="text" name="filas[@indice].GolLocal" class="form-control" style="width: 50px;" maxlength="2" inputmode="numeric" value="@det?.GolLocal" />
+                                <span> - </span>
+                                <input type="text" name="filas[@indice].GolVisita" class="form-control" style="width: 50px;" maxlength="2" inputmode="numeric" value="@det?.GolVisita" />
+                            </div>
+                            indice++;
+                        }
+                        else if (det != null)
+                        {
+                            <span class="fw-semibold">@det.GolLocal - @det.GolVisita</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Sin pronóstico</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(jp.Partido.EquipoVisita.EquipoLogo))
+                        {
+                            <img src="@jp.Partido.EquipoVisita.EquipoLogo" alt="" class="equipo-logo" />
+                        }
+                        else
+                        {
+                            <span class="equipo-logo equipo-logo-vacio"></span>
+                        }
+                        @jp.Partido.EquipoVisita.EquipoNombre
+                    </td>
+                    <td>
+                        @if (string.Equals(jp.EstatusPartido.EstatusPartidoNombre?.Trim(), "Pendiente", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                        else
+                        {
+                            <span>@(jp.GolLocal ?? 0) - @(jp.GolVisita ?? 0)</span>
+                        }
+                    </td>
+                    <td>@jp.EstatusPartido.EstatusPartidoNombre</td>
+                    <td>@(det?.Puntos?.ToString() ?? "—")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        @if (hayEditables)
+        {
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        }
+    </form>
+
+    @if (hayPronosticos)
+    {
+        <form method="post" asp-action="Limpiar" class="d-inline-block mt-2"
+              onsubmit="return confirm('¿Limpiar los pronósticos de partidos Pendientes de este participante en esta jornada?');">
+            <input type="hidden" name="temporadaId" value="@temporadaId" />
+            <input type="hidden" name="jornadaId" value="@jornadaId" />
+            <input type="hidden" name="participanteId" value="@participanteId" />
+            <button type="submit" class="btn btn-outline-danger">Limpiar pronósticos</button>
+        </form>
+    }
+}

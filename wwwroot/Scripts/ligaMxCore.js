@@ -52,6 +52,7 @@ $( document ).ready(function() {
 
   initCascada('muniPaisId', 'muniEstadoId', '/Municipio/EstadosPorPais/', 'Todos los estados');
   initCascada('jpTemporadaId', 'jpJornadaId', '/JornadaPartido/JornadasPorTemporada/', 'Selecciona una jornada');
+  initCascada('prTemporadaId', 'prJornadaId', '/JornadaPartido/JornadasPorTemporada/', 'Selecciona una jornada');
 
   // Botón de estatus de cada fila (Iniciar / Finalizar): pide el cambio al servidor y, si
   // se acepta, reemplaza SOLO esa fila por la que devuelve el servidor (así no se pierden los

@@ -893,3 +893,58 @@ petición anterior antes de lanzar una nueva.
   partidos para probar que el filtro realmente *excluye* filas de otra
   temporada (mismo tipo de limitación ya documentada para otros catálogos que
   aún no tenían datos cruzados al momento de implementarse).
+
+---
+
+## Pronósticos por participante — Fase 1: esquema (2026-10-13)
+
+Estrategia acordada para la captura de pronósticos (pantalla única Temporada →
+Jornada → Participante → Buscar, con ver / guardar-modificar / limpiar):
+
+- **Cierre de captura por partido**: un partido solo se pronostica/modifica/limpia
+  mientras su `EstatusPartido` sea "Pendiente". Regla en el servidor, no solo oculta en UI.
+- **`Puntos` es solo lectura** en esta pantalla. El cálculo queda pendiente para un
+  proceso en background o un módulo admin aún no definido. Guardar un pronóstico
+  nunca toca `Puntos`.
+- `TipoResultadoId` lo deriva el servidor desde los goles (nunca el cliente).
+- Ver = LEFT JOIN de los `JornadaPartido` de la jornada contra el detalle del
+  participante; partidos sin pronóstico salen vacíos (no se pre-crean filas 0-0).
+- Guardar = upsert por lote en transacción (cabecera si no existe; detalles con
+  `FindAsync`, sin `_context.Update()`). Limpiar = borra detalles + cabecera.
+- Mientras no exista vínculo Identity ↔ Participante, el participante se elige en un combo.
+
+**Cambio de esquema aplicado** (`Scripts/pronosticos_esquema.sql`, respaldo
+`liga.db.bak-20261013193223-prePronosticos`; ambas tablas estaban vacías, se recrearon):
+- `JornadaPronostico`: `UNIQUE(JornadaId, ParticipanteId)`.
+- `JornadaPronosticoDetalle`: nueva FK `JornadaPartidoId → JornadaPartido`,
+  `UNIQUE(JornadaPronosticoId, JornadaPartidoId)` y `ON DELETE CASCADE` hacia la cabecera.
+- Modelo: navegación `JornadaPronosticoDetalle.JornadaPartido` ↔
+  `JornadaPartido.JornadaPronosticoDetalles` y su `HasOne` en `ApplicationDbContext`.
+  Build OK.
+
+**Bloqueo de borrado**: `JornadaPartidoController.ObtenerDependencias` ya cuenta
+`JornadaPronosticoDetalles`, así que `Delete` bloquea un partido con pronósticos (no
+requirió cambio).
+
+### Fase 2 — `PronosticoController` (2026-10-13) ✅
+
+Pantalla única `/Pronostico` (navbar Quiniela → Pronósticos): filtros Temporada → Jornada
+(cascada `initCascada`, ids `prTemporadaId`/`prJornadaId`, reutiliza el endpoint
+`JornadaPartido/JornadasPorTemporada`) + Participante; no carga nada hasta "Buscar" y
+exige los tres. Grid: Local, Pronóstico (inputs), Visita, Marcador real, Estatus, Puntos
+(solo lectura).
+
+- `Guardar` (POST, antiforgery): upsert por lote con un solo `SaveChanges`. Ambos goles
+  vacíos = quita el pronóstico de ese partido; uno solo vacío o inválido (0–30) = rechaza
+  todo el lote. Ignora filas de partidos no Pendientes y rechaza partidos de otra jornada.
+  Crea la cabecera al primer detalle y la borra si se queda sin detalles. Nunca toca `Puntos`.
+- `Limpiar` (POST, antiforgery, confirm en cliente): borra solo los pronósticos de partidos
+  Pendientes; conserva los de partidos ya iniciados/finalizados y lo avisa.
+- Resultado (`TipoResultadoId`) derivado de los goles en el servidor.
+- Verificado en runtime con los 2 participantes sobre Apertura J11/J1: alta parcial,
+  modificación, borrado por vacío, validaciones, aislamiento entre participantes, partido
+  ajeno, token faltante (400), jornada finalizada sin inputs, limpiar y limpiar vacío.
+  La BD de pruebas quedó en 0 filas.
+- Pendiente: probar a mano el cierre con un partido "En Curso" que ya tenga pronóstico
+  (cubierto por código, no ejercitado en la prueba), cálculo de `Puntos` (background o
+  módulo admin, sin definir) y ranking.

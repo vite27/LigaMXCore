@@ -297,6 +297,11 @@ necesita), `Microsoft.EntityFrameworkCore.SqlServer` del `.csproj` y los respald
 
 1. **Captura de pronósticos del participante** — no existe controlador/vista para
    `JornadaPronostico`/`JornadaPronosticoDetalle`. Es el corazón funcional faltante.
+   ✅ Implementado (Fases 1–2): `PronosticoController` en `/Pronostico` (navbar Quiniela),
+   Temporada → Jornada → Participante, ver/guardar/limpiar; cierre de captura por partido
+   (solo "Pendiente"), `Puntos` solo lectura, esquema con FK a `JornadaPartido` + UNIQUEs.
+   Detalle en `PLAN.md`, sección "Pronósticos por participante". El participante se elige
+   en un combo hasta que exista el vínculo Identity ↔ Participante (#4).
 2. **Cálculo de puntos** — no hay lógica que compare resultado real
    (`JornadaPartido`) vs. pronóstico (`JornadaPronosticoDetalle`) para asignar `Puntos`.
 3. **Tabla de posiciones/ranking** de participantes — no existe.

@@ -115,6 +115,8 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasOne(d => d.JornadaPronostico).WithMany(p => p.JornadaPronosticoDetalles).OnDelete(DeleteBehavior.ClientSetNull);
 
+            entity.HasOne(d => d.JornadaPartido).WithMany(p => p.JornadaPronosticoDetalles).OnDelete(DeleteBehavior.ClientSetNull);
+
             entity.HasOne(d => d.TipoResultado).WithMany(p => p.JornadaPronosticoDetalles).OnDelete(DeleteBehavior.ClientSetNull);
         });
 

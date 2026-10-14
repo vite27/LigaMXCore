@@ -30,6 +30,9 @@ public partial class JornadaPartido
 
     public int TipoResultadoId { get; set; }
 
+    [InverseProperty("JornadaPartido")]
+    public virtual ICollection<JornadaPronosticoDetalle> JornadaPronosticoDetalles { get; set; } = new List<JornadaPronosticoDetalle>();
+
     [ForeignKey("EstadioId")]
     [InverseProperty("JornadaPartidos")]
     public virtual Estadio Estadio { get; set; } = null!;
