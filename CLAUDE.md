@@ -302,6 +302,10 @@ necesita), `Microsoft.EntityFrameworkCore.SqlServer` del `.csproj` y los respald
    (solo "Pendiente"), `Puntos` solo lectura, esquema con FK a `JornadaPartido` + UNIQUEs.
    Detalle en `PLAN.md`, sección "Pronósticos por participante". El participante se elige
    en un combo hasta que exista el vínculo Identity ↔ Participante (#4).
+   Reglas de UX **pendientes de implementar** (Fase 3 en `PLAN.md`): marcadores en ceros por
+   defecto, click en logo = 2-0 a favor de ese equipo, botón que regresa marcadores a ceros;
+   solo en partidos Pendientes y jornadas no cerradas. Ojo: chocan con "vacío = sin pronóstico"
+   (0-0 ambiguo); resolver ahí antes de tocar `Guardar`.
 2. **Cálculo de puntos** — no hay lógica que compare resultado real
    (`JornadaPartido`) vs. pronóstico (`JornadaPronosticoDetalle`) para asignar `Puntos`.
 3. **Tabla de posiciones/ranking** de participantes — no existe.

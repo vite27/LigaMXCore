@@ -948,3 +948,34 @@ exige los tres. Grid: Local, Pronóstico (inputs), Visita, Marcador real, Estatu
 - Pendiente: probar a mano el cierre con un partido "En Curso" que ya tenga pronóstico
   (cubierto por código, no ejercitado en la prueba), cálculo de `Puntos` (background o
   módulo admin, sin definir) y ranking.
+
+### Fase 3 — Reglas de UX de la captura de pronósticos (pendiente, definidas 2026-10-13)
+
+Solo documentadas; **no implementadas**. Aplican a `/Pronostico` (`PronosticoController` +
+`Views/Pronostico/Index.cshtml` + `ligaMxCore.js`):
+
+1. **Marcadores en ceros por defecto**: al cargar la jornada, los partidos que no tengan
+   pronóstico deben mostrar `0` - `0` en los inputs (hoy salen vacíos).
+2. **Captura rápida con el logo**: al hacer click en el logo de un equipo, el marcador del
+   partido se llena en **2-0 a favor de ese equipo** (logo Local → 2-0; logo Visita → 0-2).
+   Es solo un atajo en el cliente: no guarda nada hasta presionar "Guardar".
+3. **Botón "Limpiar" que devuelve los marcadores a ceros** (0-0).
+4. **Alcance de las reglas 2 y 3**: solo sobre partidos abiertos (estatus "Pendiente") y en
+   jornadas no cerradas (no "Finalizada"). En partidos cerrados, o en jornada cerrada, el
+   click en el logo y el botón no tienen efecto (logos sin cursor de acción, botón
+   deshabilitado). Como siempre, la regla real se aplica también en el servidor, no solo en UI.
+
+**Puntos a resolver antes de implementar** (las reglas nuevas chocan con lo ya hecho):
+- **0-0 vs. "sin pronóstico"**: hoy "ambos goles vacíos = sin pronóstico" (no se guarda
+  detalle). Con ceros por defecto, 0-0 pasa a ser indistinguible de "no pronosticó", y un
+  empate 0-0 deliberado no se podría diferenciar. Opciones: (a) tratar 0-0 como pronóstico
+  válido y guardar siempre todas las filas abiertas; (b) tratar 0-0 como "sin pronóstico" y
+  no guardarlo (se pierde el pronóstico de empate 0-0); (c) agregar un indicador explícito
+  de "pronosticado". Decidir antes de tocar `Guardar`.
+- **Dos "Limpiar" distintos**: el botón existente "Limpiar pronósticos" **borra de la BD**
+  (confirmación + POST). El nuevo "Limpiar" solo regresa los inputs a ceros en pantalla
+  (sin guardar). Decidir si conviven con nombres distintos (ej. "Poner en ceros" vs.
+  "Eliminar pronósticos") o si el nuevo reemplaza al anterior.
+- "Jornada cerrada" = estatus de jornada "Finalizada" (regla ya usada en
+  `MotivoBloqueoEliminar`); hoy el cierre de `Pronostico` es solo por partido. Confirmar
+  si "cerrada" incluye también "Pausada" u otros estatus.
